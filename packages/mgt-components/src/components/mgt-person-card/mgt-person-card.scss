@@ -68,7 +68,7 @@ $person-card-nav-back-arrow-hover-color: var(--person-card-nav-back-arrow-hover-
     display: flex;
     flex-direction: column;
     width: calc(var(--mgt-flyout-set-width, 340px) - 40px);
-    padding: 20px;
+    padding: 23px 0px 0px 23px;
 
     .person-image {
       --presence-background-color: #{$background-color};
@@ -86,8 +86,7 @@ $person-card-nav-back-arrow-hover-color: var(--person-card-nav-back-arrow-hover-
       display: flex;
       -webkit-align-items: center;
       align-items: center;
-      max-width: 120px;
-      margin-top: 16px;
+      margin-top: 13px;
 
       .icon {
         display: flex;
@@ -95,8 +94,8 @@ $person-card-nav-back-arrow-hover-color: var(--person-card-nav-back-arrow-hover-
         cursor: pointer;
         font-size: 12px;
         white-space: nowrap;
-        margin: -11px -13px;
-        padding: 11px 13px;
+        padding: 10px 12px;
+        margin-left: -14px;
 
         &:not(:last-child) {
           margin-right: 20px;
@@ -114,6 +113,7 @@ $person-card-nav-back-arrow-hover-color: var(--person-card-nav-back-arrow-hover-
       .icon:hover {
         color: $person-card-base-links-hover-color;
         background-color: set-var(background-color--hover, $theme-default, $common);
+        border-radius: 4px;
       }
     }
   }
@@ -127,9 +127,8 @@ $person-card-nav-back-arrow-hover-color: var(--person-card-nav-back-arrow-hover-
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 28px;
+      height: 32px;
       background: $background-color;
-      border-top: 1px solid set-var(line-seperator__color, $theme-default, $common);
       svg {
         path {
           stroke: #1a1a1a;
