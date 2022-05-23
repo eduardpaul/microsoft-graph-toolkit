@@ -942,7 +942,8 @@ export class MgtPerson extends MgtTemplatedComponent {
         // Render the line1 property value
         if (text) {
           details.push(html`
-            <div class="line1" @click=${() => this.handleLine1Clicked()} aria-label="${text}">${text}</div>
+            <div class="line1" @click=${() =>
+              this.handleLine1Clicked()} role="presentation" aria-label="${text}">${text}</div>
           `);
         }
       }
@@ -960,7 +961,8 @@ export class MgtPerson extends MgtTemplatedComponent {
         // Render the line2 property value
         if (text) {
           details.push(html`
-            <div class="line2" @click=${() => this.handleLine2Clicked()} aria-label="${text}">${text}</div>
+            <div class="line2" @click=${() =>
+              this.handleLine2Clicked()} role="presentation" aria-label="${text}">${text}</div>
           `);
         }
       }
@@ -978,7 +980,8 @@ export class MgtPerson extends MgtTemplatedComponent {
         // Render the line3 property value
         if (text) {
           details.push(html`
-            <div class="line3" @click=${() => this.handleLine3Clicked()} aria-label="${text}">${text}</div>
+            <div class="line3" @click=${() =>
+              this.handleLine3Clicked()} role="presentation" aria-label="${text}">${text}</div>
           `);
         }
       }
