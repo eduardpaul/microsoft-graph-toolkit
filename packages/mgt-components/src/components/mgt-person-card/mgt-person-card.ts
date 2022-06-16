@@ -520,9 +520,9 @@ export class MgtPersonCard extends MgtTemplatedComponent {
    * @memberof MgtPersonCard
    */
   protected renderContactIcons(person?: IDynamicPerson): TemplateResult {
-    if (this.isExpanded) {
-      return;
-    }
+    // if (this.isExpanded) {
+    //   return;
+    // }
 
     person = person || this.internalPersonDetails;
     const userPerson = person as User;
@@ -533,7 +533,6 @@ export class MgtPersonCard extends MgtTemplatedComponent {
       email = html`
         <div class="icon" @click=${() => this.emailUser()} tabindex=0>
           ${getSvg(SvgIcon.SmallEmail)}
-          <span>${this.strings.sendEmailLinkSubtitle}</span>
         </div>
       `;
     }
@@ -544,7 +543,6 @@ export class MgtPersonCard extends MgtTemplatedComponent {
       chat = html`
         <div class="icon" @click=${() => this.chatUser()} tabindex=0>
           ${getSvg(SvgIcon.SmallChat)}
-          <span>${this.strings.startChatLinkSubtitle}</span>
         </div>
       `;
     }
@@ -556,14 +554,24 @@ export class MgtPersonCard extends MgtTemplatedComponent {
       video = html`
         <div class="icon" @click=${() => this.chatUser()} tabindex=0>
           ${getSvg(SvgIcon.Video)}
-          <span>${this.strings.startVideoLinkSubtitle}</span>
+        </div>
+      `;
+    }
+
+    // Call
+    let call: TemplateResult;
+    if (userPerson.userPrincipalName) {
+      // Change to video call api URL when available
+      call = html`
+        <div class="icon" @click=${() => this.callUser()} tabindex=0>
+          ${getSvg(SvgIcon.Call)}
         </div>
       `;
     }
 
     return html`
       <div class="base-icons">
-        ${email} ${chat} ${video}
+        ${email} ${chat} ${video} ${call}
       </div>
     `;
   }
