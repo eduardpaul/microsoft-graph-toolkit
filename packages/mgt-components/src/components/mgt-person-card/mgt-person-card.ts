@@ -28,9 +28,16 @@ import { MgtPersonCardProfile } from './sections/mgt-person-card-profile/mgt-per
 import { MgtPersonCardConfig, MgtPersonCardState } from './mgt-person-card.types';
 import { strings } from './strings';
 
+import { PersonCardInteraction } from '../PersonCardInteraction';
+
 import '../sub-components/mgt-spinner/mgt-spinner';
 
 export * from './mgt-person-card.types';
+
+import { fluentTabs, fluentTab, fluentTabPanel } from '@fluentui/web-components';
+import { registerFluentComponents } from '../../utils/FluentComponents';
+
+registerFluentComponents(fluentTabs, fluentTab, fluentTabPanel);
 
 // tslint:disable-next-line:completed-docs
 interface MgtPersonCardStateHistory {
@@ -386,6 +393,11 @@ export class MgtPersonCard extends MgtTemplatedComponent {
     const historyState = this._history.pop();
     this._currentSection = null;
 
+    //resets to first tab being selected
+    const firstTab: HTMLElement = this.renderRoot.querySelector(`fluent-tab`) as HTMLElement;
+    if (firstTab) {
+      firstTab.click();
+    }
     this.state = historyState.state;
     this._personDetails = historyState.state;
     this.personImage = historyState.personImage;
@@ -529,8 +541,6 @@ export class MgtPersonCard extends MgtTemplatedComponent {
         .showPresence=${this.showPresence}
         .avatarSize=${avatarSize}
         .view=${ViewType.threelines}
-        .line2Property=${'jobTitle'}
-        .line3Property=${'department'}
       ></mgt-person>
     `;
   }
@@ -590,14 +600,11 @@ export class MgtPersonCard extends MgtTemplatedComponent {
 
     // Video
     let video: TemplateResult;
-    if (userPerson.userPrincipalName) {
-      // Change to video call api URL when available
-      video = html`
-        <div class="icon" @click=${() => this.chatUser()} tabindex=0>
+    video = html`
+       <div class="icon" @click=${() => this.videoCallUser()} tabindex=0>
           ${getSvg(SvgIcon.Video)}
         </div>
-      `;
-    }
+     `;
 
     // Call
     let call: TemplateResult;
@@ -662,15 +669,13 @@ export class MgtPersonCard extends MgtTemplatedComponent {
     person = person || this.internalPersonDetails;
 
     const sectionNavTemplate = this.renderSectionNavigation();
-    const currentSectionTemplate = this.renderCurrentSection();
 
     return html`
       <div class="section-nav">
         ${sectionNavTemplate}
       </div>
       <div class="section-host ${this._smallView ? 'small' : ''}" @wheel=${(e: WheelEvent) =>
-      this.handleSectionScroll(e)} tabindex=0>
-        ${currentSectionTemplate}
+      this.handleSectionScroll(e)}>
       </div>
     `;
   }
@@ -689,36 +694,47 @@ export class MgtPersonCard extends MgtTemplatedComponent {
 
     const currentSectionIndex = this._currentSection ? this.sections.indexOf(this._currentSection) : -1;
 
-    const navIcons = this.sections.map((section, i) => {
+    const additionalSectionTemplates = this.sections.map((section, i) => {
+      let name = section.tagName.toLowerCase();
       const classes = classMap({
         active: i === currentSectionIndex,
         'section-nav__icon': true
       });
-      const tagName = section.tagName;
-      const ariaLabel = tagName.substring(16, tagName.length).toLowerCase();
       return html`
-        <button
-          aria-label=${ariaLabel}
-          tabindex=0
-          class=${classes}
-          @click=${() => this.updateCurrentSection(section)}>
-            ${section.renderIcon()}</button>
+        <fluent-tab id="${name}-Tab" class=${classes}
+          slot="tab" @keyup="${() => this.updateCurrentSection(section)}" @click=${() =>
+        this.updateCurrentSection(section)}>${section.renderIcon()}
+        </fluent-tab>
+      `;
+    });
+
+    const additionalPanelTemplates = this.sections.map((section, i) => {
+      return html`
+        <fluent-tab-panel  slot="tabpanel">
+          <div class="inserted">${this._currentSection ? section.asFullView() : null}</div>
+        </fluent-tab-panel>
       `;
     });
 
     const overviewClasses = classMap({
       active: currentSectionIndex === -1,
-      'section-nav__icon': true
+      'section-nav__icon': true,
+      overviewTab: true
     });
+
     return html`
-      <button 
-        aria-label="overview"
-        tabindex=0 
-        class=${overviewClasses}
-        @click=${() => this.updateCurrentSection(null)}>
-          ${getSvg(SvgIcon.Overview)}
-      </button>
-      ${navIcons}
+        <fluent-tabs  orientation="horizontal" class="activeIndicator" activeindicator  @wheel=${(e: WheelEvent) =>
+          this.handleSectionScroll(e)}> 
+          <fluent-tab class="${overviewClasses}"  slot="tab" @keyup="${() =>
+      this.updateCurrentSection(null)}" @click=${() => this.updateCurrentSection(null)}>
+            <div>${getSvg(SvgIcon.Overview)}</div>
+          </fluent-tab>
+          ${additionalSectionTemplates}
+          <fluent-tab-panel slot="tabpanel" >
+            <div class="overview-panel">${!this._currentSection ? this.renderOverviewSection() : null}</div>
+          </fluent-tab-panel>
+          ${additionalPanelTemplates}
+      </fluent-tabs>
     `;
   }
 
@@ -769,7 +785,7 @@ export class MgtPersonCard extends MgtTemplatedComponent {
     }
 
     return html`
-    ${
+    <!-- ${
       this.internalPersonDetails.id !== this._me.id && MgtPersonCard.config.isSendMessageVisible
         ? html`
           <div class="quick-message">
@@ -788,7 +804,7 @@ export class MgtPersonCard extends MgtTemplatedComponent {
           </div>
         `
         : null
-    }
+    } -->
       <div class="sections">
         ${compactTemplates}
       </div>
@@ -989,6 +1005,33 @@ export class MgtPersonCard extends MgtTemplatedComponent {
   }
 
   /**
+   * Initiate a teams call with video with a user via deeplink.
+   *
+   * @protected
+   * @memberof MgtPersonCard
+   */
+  protected videoCallUser() {
+    const user = this.personDetails as User;
+    if (user && user.userPrincipalName) {
+      const users: string = user.userPrincipalName;
+
+      let url = `https://teams.microsoft.com/l/call/0/0?users=${users}&withVideo=true`;
+
+      const openWindow = () => window.open(url, '_blank', 'noreferrer');
+
+      if (TeamsHelper.isAvailable) {
+        TeamsHelper.executeDeepLink(url, (status: boolean) => {
+          if (!status) {
+            openWindow();
+          }
+        });
+      } else {
+        openWindow();
+      }
+    }
+  }
+
+  /**
    * Initiate a chat message to the user via deeplink.
    *
    * @protected
@@ -1135,7 +1178,7 @@ export class MgtPersonCard extends MgtTemplatedComponent {
   private handleKeyDown(e: KeyboardEvent) {
     //enter activates person-card
     if (e) {
-      if (e.keyCode === 13) {
+      if (e.code === 'Enter') {
         this.showExpandedDetails();
       }
     }

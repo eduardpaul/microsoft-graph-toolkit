@@ -26,7 +26,7 @@ $person-card-nav-back-arrow-hover-color: var(--person-card-nav-back-arrow-hover-
 
 :host {
   background: $background-color;
-  width: var(--mgt-flyout-set-width, 340px);
+  width: var(--mgt-flyout-set-width, 375px);
   font-family: $font-family;
   overflow: hidden;
   user-select: none;
@@ -67,7 +67,7 @@ $person-card-nav-back-arrow-hover-color: var(--person-card-nav-back-arrow-hover-
   .person-details-container {
     display: flex;
     flex-direction: column;
-    width: calc(var(--mgt-flyout-set-width, 340px) - 40px);
+    width: calc(var(--mgt-flyout-set-width, 375px) - 40px);
     padding: 23px 0px 0px 23px;
 
     .person-image {
@@ -142,11 +142,61 @@ $person-card-nav-back-arrow-hover-color: var(--person-card-nav-back-arrow-hover-
   }
 
   .section-nav {
-    display: flex;
-    padding: 0 14px;
     border-bottom: 1px solid set-var(tab__line__color, $theme-default, $common);
+    height: 36px;
+    padding-bottom: 7px;
+    fluent-tabs {
+      background-color: $background-color;
+      grid-template-columns: minmax(1px, 0.1fr);
 
-    &__icon {
+      fluent-tab-panel {
+        max-height: 360px;
+        min-height: 360px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 0px;
+        border-top: 1px solid set-var(tab__line__color, $theme-default, $common);
+        scrollbar-width: thin;
+        .inserted {
+          max-width: var(--mgt-flyout-set-width, 375px);
+          min-width: var(--mgt-flyout-set-width, 360px);
+        }
+        .overview-panel {
+          max-width: var(--mgt-flyout-set-width, 375px);
+        }
+        &::-webkit-scrollbar {
+          height: 4em;
+          width: 4px;
+          border-radius: 11px;
+        }
+        &::-webkit-scrollbar-button {
+          background: $background-color;
+          height: 1px;
+        }
+        &::-webkit-scrollbar-track {
+          background: $background-color;
+          border-radius: 10px;
+        }
+        &::-webkit-scrollbar-track-piece {
+          background: $background-color;
+        }
+        &::-webkit-scrollbar-thumb {
+          background: grey;
+          border-radius: 10px;
+          height: 4px;
+        }
+      }
+    }
+    border: 1px solid transparent;
+    fluent-tab {
+      padding-bottom: 4px !important;
+      margin-bottom: -3px !important;
+      border: 1px solid transparent !important;
+      &:focus-visible {
+        border: 1px solid #2b2b2b !important;
+      }
+    }
+    .section-nav__icon {
       all: initial;
       box-sizing: border-box;
       width: 48px;
@@ -154,32 +204,24 @@ $person-card-nav-back-arrow-hover-color: var(--person-card-nav-back-arrow-hover-
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 2px solid transparent;
+      border-bottom: 2px solid transparent;
       margin-bottom: -1px;
       cursor: pointer;
 
       svg {
+        width: 20px;
+        height: 20px;
         fill: set-var(icon__color, $theme-default, $common);
       }
 
       &:hover {
         background: set-var(tab__background-color--hover, $theme-default, $common);
+        border-radius: 2px;
       }
 
       &.active {
-        // border: none none none solid $icon--active;
-        border-bottom-color: $person-card-tab-nav-color;
-        border-bottom-style: solid;
-        border: 3px solid #036ac4;
-        border-style: none none solid;
-        border-left-color: none;
-        border-right-color: none;
-        border-top-color: none;
-        border-top-style: none;
-        border-left-style: none;
-        border-right-style: none;
         svg {
-          fill: $person-card-tab-nav-color;
+          fill: $icon--active;
         }
       }
     }

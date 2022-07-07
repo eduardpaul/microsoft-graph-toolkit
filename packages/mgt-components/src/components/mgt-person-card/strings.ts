@@ -9,5 +9,6 @@ export const strings = {
   sendEmailLinkSubtitle: 'Send email',
   startChatLinkSubtitle: 'Start chat',
   showMoreSectionButton: 'Show more',
+  quickMessagePlaceholder: 'Type message',
   endOfCard: 'End of the card'
 };
