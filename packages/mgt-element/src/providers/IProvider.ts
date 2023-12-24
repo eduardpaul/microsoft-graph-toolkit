@@ -6,12 +6,12 @@
  */
 
 import { AuthenticationProvider, AuthenticationProviderOptions } from '@microsoft/microsoft-graph-client';
-import { validateBaseURL } from '../utils/GraphHelpers';
+import { validateBaseURL } from '../utils/validateBaseURL';
 import { GraphEndpoint, IGraph, MICROSOFT_GRAPH_DEFAULT_ENDPOINT } from '../IGraph';
 import { EventDispatcher, EventHandler } from '../utils/EventDispatcher';
 
 /**
- * Provider Type to be extended for implmenting new providers
+ * Provider Type to be extended for implementing new providers
  *
  * @export
  * @abstract
@@ -47,8 +47,8 @@ export abstract class IProvider implements AuthenticationProvider {
     return false;
   }
   private _state: ProviderState;
-  private _loginChangedDispatcher = new EventDispatcher<LoginChangedEvent>();
-  private _activeAccountChangedDispatcher = new EventDispatcher<ActiveAccountChanged>();
+  private readonly _loginChangedDispatcher = new EventDispatcher<LoginChangedEvent>();
+  private readonly _activeAccountChangedDispatcher = new EventDispatcher<ActiveAccountChanged>();
   private _baseURL: GraphEndpoint = MICROSOFT_GRAPH_DEFAULT_ENDPOINT;
 
   /**
@@ -65,6 +65,19 @@ export abstract class IProvider implements AuthenticationProvider {
 
   public get baseURL(): GraphEndpoint {
     return this._baseURL;
+  }
+
+  private _customHosts?: string[] = undefined;
+
+  /**
+   * Custom Hostnames to allow graph client to utilize
+   */
+  public set customHosts(hosts: string[] | undefined) {
+    this._customHosts = hosts;
+  }
+
+  public get customHosts(): string[] | undefined {
+    return this._customHosts;
   }
 
   /**
@@ -325,13 +338,9 @@ export enum ProviderState {
  *
  * @export
  */
-export type IProviderAccount = {
-  // eslint-disable-next-line @typescript-eslint/tslint/config
+export interface IProviderAccount {
   id: string;
-  // eslint-disable-next-line @typescript-eslint/tslint/config
   mail?: string;
-  // eslint-disable-next-line @typescript-eslint/tslint/config
   name?: string;
-  // eslint-disable-next-line @typescript-eslint/tslint/config
   tenantId?: string;
-};
+}

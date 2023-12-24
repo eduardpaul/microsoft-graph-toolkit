@@ -7,11 +7,28 @@
 
 import {
   accentBaseColor,
+  accentFillActive,
+  accentFillFocus,
+  accentFillHover,
+  accentFillRest,
+  accentForegroundActive,
+  accentForegroundFocus,
+  accentForegroundHover,
+  accentForegroundRest,
+  accentStrokeControlActive,
+  accentStrokeControlFocus,
+  accentStrokeControlHover,
+  accentStrokeControlRest,
   baseLayerLuminance,
+  foregroundOnAccentActive,
+  foregroundOnAccentFocus,
+  foregroundOnAccentHover,
+  foregroundOnAccentRest,
   neutralBaseColor,
   StandardLuminance,
   SwatchRGB
 } from '@fluentui/web-components';
+import { DesignToken } from '@microsoft/fast-foundation';
 // @microsoft/fast-colors is a transitive dependency of @fluentui/web-components, no need to explicitly add it to package.json
 import { parseColorHexRGB } from '@microsoft/fast-colors';
 
@@ -19,6 +36,12 @@ import { parseColorHexRGB } from '@microsoft/fast-colors';
  * Available predefined themes
  */
 type Theme = 'light' | 'dark' | 'default' | 'contrast';
+
+const secondaryTextDefault = '#717171';
+const secondaryTextColor = DesignToken.create<string>('secondary-text-color').withDefault(secondaryTextDefault);
+const secondaryTextHoverDefault = '#1a1a1a';
+const secondaryTextHoverColor =
+  DesignToken.create<string>('secondary-text-hover-color').withDefault(secondaryTextHoverDefault);
 
 /**
  * Helper function to apply fluent ui theme to an element
@@ -35,7 +58,7 @@ export const applyTheme = (theme: Theme, element: HTMLElement = document.body): 
 /**
  * Simple data holder for theme settings
  */
-type ColorScheme = {
+interface ColorScheme {
   /**
    * Hex color string for accent base color
    *
@@ -55,7 +78,12 @@ type ColorScheme = {
    * @type {number}
    */
   baseLayerLuminance: number;
-};
+
+  /**
+   * Optional function to override design tokens
+   */
+  designTokenOverrides?: (element: HTMLElement) => void;
+}
 
 /**
  * Helper function to apply fluent ui color scheme to an element
@@ -67,6 +95,7 @@ const applyColorScheme = (settings: ColorScheme, element: HTMLElement = document
   accentBaseColor.setValueFor(element, SwatchRGB.from(parseColorHexRGB(settings.accentBaseColor)));
   neutralBaseColor.setValueFor(element, SwatchRGB.from(parseColorHexRGB(settings.neutralBaseColor)));
   baseLayerLuminance.setValueFor(element, settings.baseLayerLuminance);
+  settings.designTokenOverrides?.(element);
 };
 
 /**
@@ -93,14 +122,38 @@ const getThemeSettings = (theme: Theme): ColorScheme => {
       return {
         accentBaseColor: '#479ef5',
         neutralBaseColor: '#adadad',
-        baseLayerLuminance: StandardLuminance.DarkMode
+        baseLayerLuminance: StandardLuminance.DarkMode,
+        designTokenOverrides: element => {
+          accentFillRest.setValueFor(element, SwatchRGB.from(parseColorHexRGB('#115ea3')));
+          accentFillHover.setValueFor(element, SwatchRGB.from(parseColorHexRGB('#0f6cbd')));
+          accentFillActive.setValueFor(element, SwatchRGB.from(parseColorHexRGB('#0c3b5e')));
+          accentFillFocus.setValueFor(element, SwatchRGB.from(parseColorHexRGB('#0f548c')));
+          accentForegroundRest.setValueFor(element, SwatchRGB.from(parseColorHexRGB('#479EF5')));
+          accentForegroundHover.setValueFor(element, SwatchRGB.from(parseColorHexRGB('#62abf5')));
+          accentForegroundActive.setValueFor(element, SwatchRGB.from(parseColorHexRGB('#2886de')));
+          accentForegroundFocus.setValueFor(element, SwatchRGB.from(parseColorHexRGB('#479ef5')));
+          accentStrokeControlRest.setValueFor(element, SwatchRGB.from(parseColorHexRGB('#115ea3')));
+          accentStrokeControlHover.setValueFor(element, SwatchRGB.from(parseColorHexRGB('#0f6cbd')));
+          accentStrokeControlActive.setValueFor(element, SwatchRGB.from(parseColorHexRGB('#0c3b5e')));
+          accentStrokeControlFocus.setValueFor(element, SwatchRGB.from(parseColorHexRGB('#0f548c')));
+          foregroundOnAccentActive.setValueFor(element, SwatchRGB.from(parseColorHexRGB('#ffffff')));
+          foregroundOnAccentRest.setValueFor(element, SwatchRGB.from(parseColorHexRGB('#ffffff')));
+          foregroundOnAccentHover.setValueFor(element, SwatchRGB.from(parseColorHexRGB('#ffffff')));
+          foregroundOnAccentFocus.setValueFor(element, SwatchRGB.from(parseColorHexRGB('#ffffff')));
+          secondaryTextColor.setValueFor(element, '#8e8e8e');
+          secondaryTextHoverColor.setValueFor(element, '#ffffff');
+        }
       };
     case 'light':
     default:
       return {
         accentBaseColor: '#0f6cbd',
         neutralBaseColor: '#616161',
-        baseLayerLuminance: StandardLuminance.LightMode
+        baseLayerLuminance: StandardLuminance.LightMode,
+        designTokenOverrides: element => {
+          secondaryTextColor.setValueFor(element, secondaryTextDefault);
+          secondaryTextHoverColor.setValueFor(element, secondaryTextHoverDefault);
+        }
       };
   }
 };

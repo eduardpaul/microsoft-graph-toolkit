@@ -1,6 +1,6 @@
 {
   "name": "@microsoft/mgt-electron-provider",
-  "version": "2.0.0",
+  "version": "3.0.1",
   "description": "The Microsoft Graph Toolkit Electron Provider",
   "keywords": [
     "microsoft graph",
@@ -40,10 +40,11 @@
     "lint:provider": "eslint -c .eslintrc.provider.js 'src/Provider/**/*.ts'",
     "postpack": "cpx *.tgz ../../../artifacts"
   },
+  "sideEffects": false,
   "dependencies": {
     "@azure/msal-node": "^1.0.3",
     "@microsoft/mgt-element": "*",
-    "@microsoft/microsoft-graph-client": "^3.0.0",
+    "@microsoft/microsoft-graph-client": "3.0.2",
     "electron": "^11.0.2"
   },
   "publishConfig": {

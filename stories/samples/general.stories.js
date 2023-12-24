@@ -25,12 +25,12 @@ export const Localization = () => html`
   <mgt-login></mgt-login>
   <mgt-people-picker></mgt-people-picker>
   <mgt-teams-channel-picker></mgt-teams-channel-picker>
-  <mgt-tasks></mgt-tasks>
+  <mgt-planner></mgt-planner>
   <mgt-agenda></mgt-agenda>
   <mgt-people></mgt-people>
   <mgt-todo></mgt-todo>
   <script>
-    import { LocalizationHelper } from '@microsoft/mgt';
+    import { LocalizationHelper } from '@microsoft/mgt-element';
     LocalizationHelper.strings = {
       _components: {
         login: {
@@ -59,24 +59,25 @@ export const Localization = () => html`
         'person-card': {
           showMoreSectionButton: 'أظهر المزيد' // global declaration
         },
-        'person-card-contact': {
+        'contact': {
           contactSectionTitle: 'اتصل'
         },
-        'person-card-organization': {
+        'organization': {
           reportsToSectionTitle: 'تقارير ل',
           directReportsSectionTitle: 'تقارير مباشرة',
           organizationSectionTitle: 'منظمة',
           youWorkWithSubSectionTitle: 'انت تعمل مع',
           userWorksWithSubSectionTitle: 'يعمل مع'
         },
-        'person-card-messages': {
+        'messages': {
           emailsSectionTitle: 'رسائل البريد الإلكتروني'
         },
-        'person-card-files': {
+        'file-list': {
           filesSectionTitle: 'الملفات',
-          sharedTextSubtitle: 'مشترك'
+          sharedTextSubtitle: 'مشترك',
+          showMoreSubtitle: 'Show more 📂'
         },
-        'person-card-profile': {
+        'profile': {
           SkillsAndExperienceSectionTitle: 'المهارات والخبرة',
           AboutCompactSectionTitle: 'حول',
           SkillsSubSectionTitle: 'مهارات',
@@ -94,109 +95,136 @@ export const Localization = () => html`
 `;
 
 export const cache = () => html`
-  <button id="ClearCacheButton" type="button">Clear Cache</button>
-  <span class="notes"
-    >*Note* Please refer to your browser Developer Tools -> Applications -> Storage -> IndexedDB for cached
-    objects</span
-  >
+<button id="ClearCacheButton" type="button">Clear Cache</button>
+<div id="status" class="notes"></div>
+<span class="notes"
+  >*Note* Please refer to your browser Developer Tools -> Applications -> Storage -> IndexedDB for cached
+  objects</span
+>
 
-  <mgt-login></mgt-login>
-  <mgt-person person-query="me" view="twoLines" person-card="hover" show-presence></mgt-person>
-  <mgt-person user-id="4782e723-f4f4-4af3-a76e-25e3bab0d896" view="twoLines"></mgt-person>
-  <mgt-people-picker></mgt-people-picker>
-  <mgt-people-picker type="group"></mgt-people-picker>
-  <mgt-people-picker group-id="02bd9fd6-8f93-4758-87c3-1fb73740a315"></mgt-people-picker>
-  <mgt-teams-channel-picker></mgt-teams-channel-picker>
-  <mgt-tasks data-source="todo"></mgt-tasks>
-  <mgt-agenda group-by-day></mgt-agenda>
-  <mgt-people show-presence show-max="10"></mgt-people>
-  <mgt-people group-id="02bd9fd6-8f93-4758-87c3-1fb73740a315"></mgt-people>
-  <mgt-people user-ids="4782e723-f4f4-4af3-a76e-25e3bab0d896, f5289423-7233-4d60-831a-fe107a8551cc"></mgt-people>
+<mgt-login></mgt-login>
+<mgt-person person-query="me" view="twoLines" person-card="hover" show-presence></mgt-person>
+<mgt-person user-id="4782e723-f4f4-4af3-a76e-25e3bab0d896" view="twoLines"></mgt-person>
+<mgt-people-picker></mgt-people-picker>
+<mgt-people-picker type="group"></mgt-people-picker>
+<mgt-people-picker group-id="02bd9fd6-8f93-4758-87c3-1fb73740a315"></mgt-people-picker>
+<mgt-teams-channel-picker></mgt-teams-channel-picker>
+<mgt-planner data-source="todo"></mgt-planner>
+<mgt-agenda group-by-day></mgt-agenda>
+<mgt-people show-presence show-max="10"></mgt-people>
+<mgt-people group-id="02bd9fd6-8f93-4758-87c3-1fb73740a315"></mgt-people>
+<mgt-people user-ids="4782e723-f4f4-4af3-a76e-25e3bab0d896, f5289423-7233-4d60-831a-fe107a8551cc"></mgt-people>
   <style>
-    .notes {
-      display: block;
-      font-size: 12px;
-      font-family: 'Segoe UI', 'Segoe UI Web (West European)', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto,
-        'Helvetica Neue', sans-serif;
-      margin-bottom: 5px;
-    }
+.notes {
+  display: block;
+  font-size: 12px;
+  font-family: 'Segoe UI', 'Segoe UI Web (West European)', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto,
+    'Helvetica Neue', sans-serif;
+  margin-bottom: 5px;
+}
   </style>
   <script>
-    import { CacheService } from '@microsoft/mgt';
-    CacheService.config.isEnabled = true;
+import { CacheService, Providers } from '@microsoft/mgt-element';
+CacheService.config.isEnabled = true;
 
-    let clearCacheButton = document.getElementById('ClearCacheButton');
-    clearCacheButton.addEventListener('click', clearCache);
-    function clearCache() {
-      CacheService.clearCaches();
-    }
+const status = document.getElementById('status');
+status.innerHTML = 'Cache is enabled: ' + CacheService.config.isEnabled;
 
-    // you can clear cache by:
-    // CacheService.clearCaches();
+const clearCache = async () => {
+  // get the id of the current cache
+  const id = await Providers.getCacheId();
+  status.innerHTML = 'Clearing cache ' + id + ', this may take a little while...';
+  // clear the current cache
+  await CacheService.clearCacheById(id);
+  status.innerHTML = 'Cache cleared.';
+}
 
-    // this is the config object
-    // {
-    //   defaultInvalidationPeriod: number,
-    //   isEnabled: boolean,
-    //   people: {
-    //     invalidationPeriod: number,
-    //     isEnabled: boolean
-    //   },
-    //   photos: {
-    //     invalidationPeriod: number,
-    //     isEnabled: boolean
-    //   },
-    //   users: {
-    //     invalidationPeriod: number,
-    //     isEnabled: boolean
-    //   },
-    //   presence: {
-    //     invalidationPeriod: number,
-    //     isEnabled: boolean
-    //   },
-    //   groups: {
-    //     invalidationPeriod: number,
-    //     isEnabled: boolean
-    //   }
-    // };
+const onClearCacheButtonClick = () => {
+  void clearCache();
+};
+
+let clearCacheButton = document.getElementById('ClearCacheButton');
+clearCacheButton.addEventListener('click', onClearCacheButtonClick);
+
+// this is the config object
+// {
+//   defaultInvalidationPeriod: number,
+//   isEnabled: boolean,
+//   people: {
+//     invalidationPeriod: number,
+//     isEnabled: boolean
+//   },
+//   photos: {
+//     invalidationPeriod: number,
+//     isEnabled: boolean
+//   },
+//   users: {
+//     invalidationPeriod: number,
+//     isEnabled: boolean
+//   },
+//   presence: {
+//     invalidationPeriod: number,
+//     isEnabled: boolean
+//   },
+//   groups: {
+//     invalidationPeriod: number,
+//     isEnabled: boolean
+//   }
+// };
   </script>
 `;
-export const theme = () => html`
-  <div class="mgt-light">
-    <header class="mgt-dark">
-      <p>I should be dark, regional class</p>
-      <mgt-teams-channel-picker></mgt-teams-channel-picker>
-      <div class="mgt-light">
-        <p>I should be light, second level regional class</p>
-        <mgt-teams-channel-picker></mgt-teams-channel-picker>
-      </div>
-    </header>
-    <article>
-      <p>I should be light, global class</p>
-      <mgt-teams-channel-picker></mgt-teams-channel-picker>
-    </article>
-    <p>I am custom themed</p>
-    <mgt-teams-channel-picker class="custom1"></mgt-teams-channel-picker>
-    <p>I have both custom input background color and mgt-dark theme</p>
-    <mgt-teams-channel-picker class="mgt-dark custom2"></mgt-teams-channel-picker>
-    <p>I should be light, with unknown class mgt-foo</p>
-    <mgt-teams-channel-picker class="mgt-foo"></mgt-teams-channel-picker>
-  </div>
-  <style>
-    .custom1 {
-      --input-border: 2px solid teal;
-      --input-background-color: #33c2c2;
-      --dropdown-background-color: #33c2c2;
-      --dropdown-item-hover-background: #2a7d88;
-      --input-hover-color: #b911b1;
-      --input-focus-color: #441540;
-      --font-color: white;
-      --placeholder-default-color: white;
-      --placeholder-focus-color: #441540;
-    }
 
-    .custom2 {
-      --input-background-color: #e47c4d;
-    }
-  </style>
+export const theme = () => html`
+<div>
+  <p>This demonstrates how to set the theme globally without using a theme toggle and customize styling within specific scopes</p>
+  <p>Please refer to the JS and CSS tabs in the editor for implentation details</p>
+  <mgt-login></mgt-login>
+  <p>This picker shows the custom focus ring color</p>
+  <div class="custom-focus">
+    <mgt-people-picker></mgt-people-picker>
+  </div>
+  <article>
+    <p>I use the theme set on the body</p>
+    <mgt-teams-channel-picker></mgt-teams-channel-picker>
+  </article>
+  <p>I am custom themed, take care to ensure that your customizations maintain accessibility standards</p>
+  <mgt-teams-channel-picker class="custom1"></mgt-teams-channel-picker>
+</div>
+<script>
+import { applyTheme } from '@microsoft/mgt-components';
+const body = document.querySelector('body');
+if(body) applyTheme('dark', body);
+</script>
+<style>
+body {
+  background-color: var(--fill-color);
+  color: var(--neutral-foreground-rest);
+  font-family: var(--default-font-family, var(--body-font));
+  /* Uncomment to change the default font family */
+  /* --default-font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif; */
+  /* Uncomment to change the fluent element font variable */
+  /* --body-font: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif; */
+}
+.custom-focus {
+  --focus-ring-color: red;
+  --focus-ring-style: solid;
+}
+.custom1 {
+  --channel-picker-input-border: 2px solid teal;
+  --channel-picker-input-background-color: black;
+  --channel-picker-input-background-color-hover: #1a1a1a;
+  --channel-picker-search-icon-color: yellow;
+  --channel-picker-close-icon-color: yellow;
+  --channel-picker-down-chevron-color: yellow;
+  --channel-picker-up-chevron-color: yellow;
+  --channel-picker-input-placeholder-text-color: white;
+  --channel-picker-input-placeholder-text-color-focus: yellow;
+  --channel-picker-input-placeholder-text-color-hover: chartreuse;
+  --channel-picker-dropdown-background-color: #008383;
+  --channel-picker-dropdown-item-background-color-hover: #006363;
+  --channel-picker-font-color: white;
+  --channel-picker-placeholder-default-color: white;
+  --channel-picker-placeholder-focus-color: #441540;
+}
+</style>
 `;

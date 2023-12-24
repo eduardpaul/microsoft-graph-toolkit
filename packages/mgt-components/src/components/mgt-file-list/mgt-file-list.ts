@@ -5,10 +5,17 @@
  * -------------------------------------------------------------------------------------------
  */
 
-import { GraphPageIterator, Providers, ProviderState, customElement, mgtHtml } from '@microsoft/mgt-element';
+import {
+  arraysAreEqual,
+  GraphPageIterator,
+  Providers,
+  ProviderState,
+  mgtHtml,
+  MgtTemplatedComponent
+} from '@microsoft/mgt-element';
 import { DriveItem } from '@microsoft/microsoft-graph-types';
-import { html, PropertyValueMap, TemplateResult } from 'lit';
-import { state } from 'lit/decorators.js';
+import { html, TemplateResult } from 'lit';
+import { property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import {
   clearFilesCache,
@@ -34,8 +41,8 @@ import { getSvg, SvgIcon } from '../../utils/SvgHelper';
 import { ViewType } from '../../graph/types';
 import { styles } from './mgt-file-list-css';
 import { strings } from './strings';
-import { MgtFile } from '../mgt-file/mgt-file';
-import { MgtFileUpload, MgtFileUploadConfig } from './mgt-file-upload/mgt-file-upload';
+import { MgtFile, registerMgtFileComponent } from '../mgt-file/mgt-file';
+import { MgtFileUploadConfig, registerMgtFileUploadComponent } from './mgt-file-upload/mgt-file-upload';
 
 import {
   fluentProgressRing,
@@ -48,14 +55,15 @@ import { registerFluentComponents } from '../../utils/FluentComponents';
 import '../mgt-menu/mgt-menu';
 import { MgtFileListBase } from './mgt-file-list-base';
 import { CardSection } from '../BasePersonCardSection';
+import { registerComponent } from '@microsoft/mgt-element';
 
-registerFluentComponents(
-  fluentProgressRing,
-  fluentDesignSystemProvider,
-  fluentDataGrid,
-  fluentDataGridRow,
-  fluentDataGridCell
-);
+export const registerMgtFileListComponent = () => {
+  registerFluentComponents(fluentProgressRing);
+
+  registerMgtFileComponent();
+  registerMgtFileUploadComponent();
+  registerComponent('file-list', MgtFileList);
+};
 
 /**
  * The File List component displays a list of multiple folders and files by
@@ -83,11 +91,8 @@ registerFluentComponents(
  * @cssprop --show-more-button-border-bottom-left-radius - {String} the "show more" button bottom left border radius. Default value is 8px;
  * @cssprop --progress-ring-size -{String} Progress ring height and width. Default value is 24px.
  */
-
-// tslint:disable-next-line: max-classes-per-file
-@customElement('file-list')
-export class MgtFileList extends MgtFileListBase implements CardSection {
-  private _isCompact = false;
+export class MgtFileList extends MgtTemplatedComponent implements CardSection {
+  @state() private _isCompact = false;
   /**
    * Array of styles to apply to the element. The styles should be defined
    * using the `css` tag function.
@@ -177,6 +182,402 @@ export class MgtFileList extends MgtFileListBase implements CardSection {
   }
 
   /**
+   * allows developer to provide an array of file queries
+   *
+   * @type {string[]}
+   * @memberof MgtFileList
+   */
+  @property({
+    attribute: 'file-queries',
+    converter: (value, _type) => {
+      if (value) {
+        return value.split(',').map(v => v.trim());
+      } else {
+        return null;
+      }
+    }
+  })
+  public get fileQueries(): string[] {
+    return this._fileQueries;
+  }
+  public set fileQueries(value: string[]) {
+    if (arraysAreEqual(this._fileQueries, value)) {
+      return;
+    }
+
+    this._fileQueries = value;
+    void this.requestStateUpdate(true);
+  }
+
+  /**
+   * allows developer to provide an array of files
+   *
+   * @type {MicrosoftGraph.DriveItem[]}
+   * @memberof MgtFileList
+   */
+  @property({ type: Object })
+  public files: DriveItem[];
+
+  /**
+   * allows developer to provide site id for a file
+   *
+   * @type {string}
+   * @memberof MgtFileList
+   */
+  @property({
+    attribute: 'site-id'
+  })
+  public get siteId(): string {
+    return this._siteId;
+  }
+  public set siteId(value: string) {
+    if (value === this._siteId) {
+      return;
+    }
+
+    this._siteId = value;
+    void this.requestStateUpdate(true);
+  }
+
+  /**
+   * allows developer to provide drive id for a file
+   *
+   * @type {string}
+   * @memberof MgtFileList
+   */
+  @property({
+    attribute: 'drive-id'
+  })
+  public get driveId(): string {
+    return this._driveId;
+  }
+  public set driveId(value: string) {
+    if (value === this._driveId) {
+      return;
+    }
+
+    this._driveId = value;
+    void this.requestStateUpdate(true);
+  }
+
+  /**
+   * allows developer to provide group id for a file
+   *
+   * @type {string}
+   * @memberof MgtFileList
+   */
+  @property({
+    attribute: 'group-id'
+  })
+  public get groupId(): string {
+    return this._groupId;
+  }
+  public set groupId(value: string) {
+    if (value === this._groupId) {
+      return;
+    }
+
+    this._groupId = value;
+    void this.requestStateUpdate(true);
+  }
+
+  /**
+   * allows developer to provide item id for a file
+   *
+   * @type {string}
+   * @memberof MgtFileList
+   */
+  @property({
+    attribute: 'item-id'
+  })
+  public get itemId(): string {
+    return this._itemId;
+  }
+  public set itemId(value: string) {
+    if (value === this._itemId) {
+      return;
+    }
+
+    this._itemId = value;
+    void this.requestStateUpdate(true);
+  }
+
+  /**
+   * allows developer to provide item path for a file
+   *
+   * @type {string}
+   * @memberof MgtFileList
+   */
+  @property({
+    attribute: 'item-path'
+  })
+  public get itemPath(): string {
+    return this._itemPath;
+  }
+  public set itemPath(value: string) {
+    if (value === this._itemPath) {
+      return;
+    }
+
+    this._itemPath = value;
+    void this.requestStateUpdate(true);
+  }
+
+  /**
+   * allows developer to provide user id for a file
+   *
+   * @type {string}
+   * @memberof MgtFile
+   */
+  @property({
+    attribute: 'user-id'
+  })
+  public get userId(): string {
+    return this._userId;
+  }
+  public set userId(value: string) {
+    if (value === this._userId) {
+      return;
+    }
+
+    this._userId = value;
+    void this.requestStateUpdate(true);
+  }
+
+  /**
+   * allows developer to provide insight type for a file
+   * can be trending, used, or shared
+   *
+   * @type {OfficeGraphInsightString}
+   * @memberof MgtFileList
+   */
+  @property({
+    attribute: 'insight-type'
+  })
+  public get insightType(): OfficeGraphInsightString {
+    return this._insightType;
+  }
+  public set insightType(value: OfficeGraphInsightString) {
+    if (value === this._insightType) {
+      return;
+    }
+
+    this._insightType = value;
+    void this.requestStateUpdate(true);
+  }
+
+  /**
+   * Sets what data to be rendered (file icon only, oneLine, twoLines threeLines).
+   * Default is 'threeLines'.
+   *
+   * @type {ViewType}
+   * @memberof MgtFileList
+   */
+  @property({
+    attribute: 'item-view',
+    converter: value => {
+      if (!value || value.length === 0) {
+        return ViewType.threelines;
+      }
+
+      value = value.toLowerCase();
+
+      if (typeof ViewType[value] === 'undefined') {
+        return ViewType.threelines;
+      } else {
+        return ViewType[value] as ViewType;
+      }
+    }
+  })
+  public itemView: ViewType;
+
+  /**
+   * allows developer to provide file type to filter the list
+   * can be docx
+   *
+   * @type {string[]}
+   * @memberof MgtFileList
+   */
+  @property({
+    attribute: 'file-extensions',
+    converter: (value, _type) => {
+      return value.split(',').map(v => v.trim());
+    }
+  })
+  public get fileExtensions(): string[] {
+    return this._fileExtensions;
+  }
+  public set fileExtensions(value: string[]) {
+    if (arraysAreEqual(this._fileExtensions, value)) {
+      return;
+    }
+
+    this._fileExtensions = value;
+    void this.requestStateUpdate(true);
+  }
+
+  /**
+   * A number value to indicate the number of more files to load when show more button is clicked
+   *
+   * @type {number}
+   * @memberof MgtFileList
+   */
+  @property({
+    attribute: 'page-size',
+    type: Number
+  })
+  public get pageSize(): number {
+    return this._pageSize;
+  }
+  public set pageSize(value: number) {
+    if (value === this._pageSize) {
+      return;
+    }
+
+    this._pageSize = value;
+    void this.requestStateUpdate(true);
+  }
+
+  @property({
+    attribute: 'disable-open-on-click',
+    type: Boolean
+  })
+  public disableOpenOnClick = false;
+  /**
+   * A boolean value indication if 'show-more' button should be disabled
+   *
+   * @type {boolean}
+   * @memberof MgtFileList
+   */
+  @property({
+    attribute: 'hide-more-files-button',
+    type: Boolean
+  })
+  public hideMoreFilesButton: boolean;
+
+  /**
+   * A number value indication for file size upload (KB)
+   *
+   * @type {number}
+   * @memberof MgtFileList
+   */
+  @property({
+    attribute: 'max-file-size',
+    type: Number
+  })
+  public get maxFileSize(): number {
+    return this._maxFileSize;
+  }
+  public set maxFileSize(value: number) {
+    if (value === this._maxFileSize) {
+      return;
+    }
+
+    this._maxFileSize = value;
+    void this.requestStateUpdate(true);
+  }
+
+  /**
+   * A boolean value indication if file upload extension should be enable or disabled
+   *
+   * @type {boolean}
+   * @memberof MgtFileList
+   */
+  @property({
+    attribute: 'enable-file-upload',
+    type: Boolean
+  })
+  public enableFileUpload: boolean;
+
+  /**
+   * A number value to indicate the max number allowed of files to upload.
+   *
+   * @type {number}
+   * @memberof MgtFileList
+   */
+  @property({
+    attribute: 'max-upload-file',
+    type: Number
+  })
+  public get maxUploadFile(): number {
+    return this._maxUploadFile;
+  }
+  public set maxUploadFile(value: number) {
+    if (value === this._maxUploadFile) {
+      return;
+    }
+
+    this._maxUploadFile = value;
+    void this.requestStateUpdate(true);
+  }
+
+  /**
+   * A Array of file extensions to be excluded from file upload.
+   *
+   * @type {string[]}
+   * @memberof MgtFileList
+   */
+  @property({
+    attribute: 'excluded-file-extensions',
+    converter: (value, _type) => {
+      return value.split(',').map(v => v.trim());
+    }
+  })
+  public get excludedFileExtensions(): string[] {
+    return this._excludedFileExtensions;
+  }
+  public set excludedFileExtensions(value: string[]) {
+    if (arraysAreEqual(this._excludedFileExtensions, value)) {
+      return;
+    }
+
+    this._excludedFileExtensions = value;
+    void this.requestStateUpdate(true);
+  }
+
+  /**
+   * Get the scopes required for file list
+   *
+   * @static
+   * @return {*}  {string[]}
+   * @memberof MgtFileList
+   */
+  public static get requiredScopes(): string[] {
+    return [...new Set([...MgtFile.requiredScopes])];
+  }
+
+  private _fileListQuery: string;
+  private _fileQueries: string[];
+  private _siteId: string;
+  private _itemId: string;
+  private _driveId: string;
+  private _itemPath: string;
+  private _groupId: string;
+  private _insightType: OfficeGraphInsightString;
+  private _fileExtensions: string[];
+  private _pageSize: number;
+  private _excludedFileExtensions: string[];
+  private _maxUploadFile: number;
+  private _maxFileSize: number;
+  private _userId: string;
+  private _preloadedFiles: DriveItem[];
+  private pageIterator: GraphPageIterator<DriveItem>;
+  // tracking user arrow key input of selection for accessibility purpose
+  private _focusedItemIndex = -1;
+
+  @state() private _isLoadingMore: boolean;
+
+  constructor() {
+    super();
+
+    this.pageSize = 10;
+    this.itemView = ViewType.twolines;
+    this.maxUploadFile = 10;
+    this.enableFileUpload = false;
+    this._preloadedFiles = [];
+  }
+
+  /**
    * Override requestStateUpdate to include clearstate.
    *
    * @memberof MgtFileList
@@ -193,7 +594,6 @@ export class MgtFileList extends MgtFileListBase implements CardSection {
    */
   protected clearState(): void {
     super.clearState();
-    this._isCompact = false;
     this.files = null;
     this._isCompact = false;
     this._selectedFiles = new Map();
@@ -208,7 +608,6 @@ export class MgtFileList extends MgtFileListBase implements CardSection {
    */
   public asCompactView() {
     this._isCompact = true;
-    this.requestUpdate();
     return this;
   }
 
@@ -220,7 +619,6 @@ export class MgtFileList extends MgtFileListBase implements CardSection {
    */
   public asFullView() {
     this._isCompact = false;
-    this.requestUpdate();
     return this;
   }
 
@@ -287,7 +685,7 @@ export class MgtFileList extends MgtFileListBase implements CardSection {
       this.renderTemplate('no-data', null) ||
       (this.enableFileUpload === true && Providers.globalProvider !== undefined
         ? html`
-            <div id="file-list-wrapper" class="file-list-wrapper" dir=${this.direction}>
+            <div class="file-list-wrapper" dir=${this.direction}>
               ${this.renderFileUpload()}
             </div>`
         : html``)
@@ -419,18 +817,18 @@ export class MgtFileList extends MgtFileListBase implements CardSection {
    *
    * @returns void
    */
-  private onFocusFirstItem = () => (this._focusedItemIndex = 0);
+  private readonly onFocusFirstItem = () => (this._focusedItemIndex = 0);
 
   /**
    * Handle accessibility keyboard keydown events (arrow up, arrow down, enter, tab) on file list
    *
    * @param event
    */
-  private onFileListKeyDown = (event: KeyboardEvent): void => {
+  private readonly onFileListKeyDown = (event: KeyboardEvent): void => {
     const fileList = this.renderRoot.querySelector('.file-list');
     let focusedItem: HTMLElement;
 
-    if (!fileList || !fileList.children.length) {
+    if (!fileList?.children.length) {
       return;
     }
 
@@ -454,7 +852,8 @@ export class MgtFileList extends MgtFileListBase implements CardSection {
 
       const file = focusedItem.children[0] as MgtFile;
       event.preventDefault();
-      this.raiseItemClickedEvent(file.fileDetails);
+      this.fireCustomEvent('itemClick', file.fileDetails);
+      this.handleFileClick(file.fileDetails);
 
       this.updateItemBackgroundColor(fileList, focusedItem, 'selected');
     }
@@ -561,7 +960,7 @@ export class MgtFileList extends MgtFileListBase implements CardSection {
       let filteredByFileExtension: DriveItem[];
       if (this.fileExtensions && this.fileExtensions !== null) {
         // retrive all pages before filtering
-        if (this.pageIterator && this.pageIterator.value) {
+        if (this.pageIterator?.value) {
           while (this.pageIterator.hasNext) {
             await fetchNextAndCacheForFilesPageIterator(this.pageIterator);
           }
@@ -577,7 +976,7 @@ export class MgtFileList extends MgtFileListBase implements CardSection {
         });
       }
 
-      if (filteredByFileExtension && filteredByFileExtension.length >= 0) {
+      if (filteredByFileExtension?.length >= 0) {
         this.files = filteredByFileExtension;
         if (this.pageSize) {
           files = this.files.splice(0, this.pageSize);
@@ -630,8 +1029,8 @@ export class MgtFileList extends MgtFileListBase implements CardSection {
     } else {
       if (this.pageIterator.hasNext) {
         this._isLoadingMore = true;
-        const root = this.renderRoot.querySelector('file-list-wrapper');
-        if (root && root.animate) {
+        const root = this.renderRoot.querySelector('#file-list-wrapper');
+        if (root?.animate) {
           // play back
           root.animate(
             [
@@ -661,7 +1060,7 @@ export class MgtFileList extends MgtFileListBase implements CardSection {
   };
 
   private handleFileClick(file: DriveItem) {
-    if (file && file.webUrl) {
+    if (file?.webUrl && !this.disableOpenOnClick) {
       window.open(file.webUrl, '_blank', 'noreferrer');
     }
   }

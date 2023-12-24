@@ -7,30 +7,34 @@
 
 import { CSSResult, html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { customElement, MgtBaseComponent } from '@microsoft/mgt-element';
+import { MgtBaseComponent } from '@microsoft/mgt-element';
 import { fluentSearch } from '@fluentui/web-components';
 import { registerFluentComponents } from '../../utils/FluentComponents';
 import { strings } from './strings';
 import { styles } from './mgt-search-box-css';
 import { debounce } from '../../utils/Utils';
+import { registerComponent } from '@microsoft/mgt-element';
 
-registerFluentComponents(fluentSearch);
+export const registerMgtSearchBoxComponent = () => {
+  registerFluentComponents(fluentSearch);
+  registerComponent('search-box', MgtSearchBox);
+};
 
 /**
- * Web component used to enter a search value to power search scenarios
+ * **Preview component** Web component used to enter a search value to power search scenarios.
+ * Component may change before general availability release.
  *
  * @fires {CustomEvent<string>} searchTermChanged - Fired when the search term is changed
  *
  * @class MgtSearchBox
  * @extends {MgtBaseComponent}
  */
-@customElement('search-box')
-class MgtSearchBox extends MgtBaseComponent {
+export class MgtSearchBox extends MgtBaseComponent {
   /**
    * Array of styles to apply to the element. The styles should be defined
    * user the `css` tag function.
    */
-  static get styles() {
+  static get styles(): CSSResult[] {
     return styles;
   }
 
@@ -46,7 +50,7 @@ class MgtSearchBox extends MgtBaseComponent {
   }
 
   /**
-   * Placeholder text
+   * The placeholder rendered in the search input (for example, `Select a user` or `Select a task list`).
    *
    * @type {string}
    * @memberof MgtSearchBox
@@ -76,7 +80,7 @@ class MgtSearchBox extends MgtBaseComponent {
   }
 
   /**
-   * Debounce delay of the search input
+   * Debounce delay of the search input in milliseconds
    *
    * @type {number}
    * @memberof MgtSearchBox
@@ -94,6 +98,7 @@ class MgtSearchBox extends MgtBaseComponent {
     super();
     this.debounceDelay = 300;
   }
+
   /**
    * Renders the component
    *
@@ -103,6 +108,7 @@ class MgtSearchBox extends MgtBaseComponent {
   render(): TemplateResult {
     return html`
       <fluent-search
+        autocomplete="off"
         class="search-term-input"
         appearance="outline"
         value=${this.searchTerm ?? ''}
@@ -114,7 +120,7 @@ class MgtSearchBox extends MgtBaseComponent {
       </fluent-search>`;
   }
 
-  private onInputChanged = (e: Event) => {
+  private readonly onInputChanged = (e: Event) => {
     this.searchTerm = (e.target as HTMLInputElement).value;
   };
 

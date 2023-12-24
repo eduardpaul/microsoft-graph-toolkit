@@ -8,7 +8,6 @@
 import { html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import {
-  CacheItem,
   CacheService,
   CacheStore,
   equals,
@@ -16,8 +15,8 @@ import {
   prepScopes,
   Providers,
   ProviderState,
-  customElement,
-  CollectionResponse
+  CollectionResponse,
+  IGraph
 } from '@microsoft/mgt-element';
 
 import { getPhotoForResource } from '../../graph/graph.photos';
@@ -25,19 +24,15 @@ import { getDocumentThumbnail } from '../../graph/graph.files';
 import { schemas } from '../../graph/cacheStores';
 import { CacheResponse } from '../CacheResponse';
 import { Entity } from '@microsoft/microsoft-graph-types';
+import { GraphRequest } from '@microsoft/microsoft-graph-client';
+import { registerComponent } from '@microsoft/mgt-element';
 
 /**
  * Simple holder type for an image
  */
-type ImageValue = { image: string };
-
-/**
- * Type guard to check if a value is an entity
- *
- * @param entity value to be type checked
- * @returns {boolean} true if the value is an entity
- */
-const isEntity = (entity: any): entity is Entity => Boolean((entity as Entity).id);
+interface ImageValue {
+  image: string;
+}
 
 /**
  * A type guard to check if a value is a collection response
@@ -46,7 +41,7 @@ const isEntity = (entity: any): entity is Entity => Boolean((entity as Entity).i
  * @returns {boolean} true if the value is a collection response
  */
 export const isCollectionResponse = (value: unknown): value is CollectionResponse<unknown> =>
-  Array.isArray((value as CollectionResponse<unknown>).value);
+  Array.isArray((value as CollectionResponse<unknown>)?.value);
 
 /**
  * Enumeration to define what types of query are available
@@ -83,12 +78,12 @@ const getIsResponseCacheEnabled = (): boolean =>
 /**
  * Holder type emitted with the dataChange event
  */
-export type DataChangedDetail = {
-  // eslint-disable-next-line @typescript-eslint/tslint/config
+export interface DataChangedDetail {
   response?: CollectionResponse<Entity>;
-  // eslint-disable-next-line @typescript-eslint/tslint/config
   error?: object;
-};
+}
+
+export const registerMgtGetComponent = () => registerComponent('get', MgtGet);
 
 /**
  * Custom element for making Microsoft Graph get queries
@@ -99,8 +94,6 @@ export type DataChangedDetail = {
  * @class mgt-get
  * @extends {MgtTemplatedComponent}
  */
-@customElement('get')
-// @customElement('mgt-get')
 export class MgtGet extends MgtTemplatedComponent {
   /**
    * The resource to get
@@ -123,7 +116,7 @@ export class MgtGet extends MgtTemplatedComponent {
    */
   @property({
     attribute: 'scopes',
-    converter: (value, type) => {
+    converter: (value, _type) => {
       return value ? value.toLowerCase().split(',') : null;
     },
     reflect: true
@@ -367,10 +360,10 @@ export class MgtGet extends MgtTemplatedComponent {
             isDeltaLink = new URL(uri, 'https://graph.microsoft.com').pathname.endsWith('delta');
           }
 
-          const graph = provider.graph.forComponent(this);
-          let request = graph.api(uri).version(this.version);
+          const graph: IGraph = provider.graph.forComponent(this);
+          let request: GraphRequest = graph.api(uri).version(this.version);
 
-          if (this.scopes && this.scopes.length) {
+          if (this.scopes?.length) {
             request = request.middlewareOptions(prepScopes(...this.scopes));
           }
 
@@ -393,13 +386,12 @@ export class MgtGet extends MgtTemplatedComponent {
 
               while (
                 (pageCount < this.maxPages || this.maxPages <= 0 || (isDeltaLink && this.pollingRate)) &&
-                page &&
-                page['@odata.nextLink']
+                page?.['@odata.nextLink']
               ) {
                 pageCount++;
                 const nextResource = (page['@odata.nextLink'] as string).split(this.version)[1];
                 page = (await graph.client.api(nextResource).version(this.version).get()) as CollectionResponse<Entity>;
-                if (page && page.value && page.value.length) {
+                if (page?.value?.length) {
                   page.value = response.value.concat(page.value);
                   response = page;
                   if (!this.isPolling) {
@@ -454,7 +446,7 @@ export class MgtGet extends MgtTemplatedComponent {
         if (this.pollingRate) {
           setTimeout(() => {
             this.isPolling = true;
-            this.loadState().finally(() => {
+            void this.loadState().finally(() => {
               this.isPolling = false;
             });
           }, this.pollingRate);

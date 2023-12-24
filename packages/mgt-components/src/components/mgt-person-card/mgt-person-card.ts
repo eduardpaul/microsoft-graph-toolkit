@@ -5,7 +5,7 @@
  * -------------------------------------------------------------------------------------------
  */
 
-import { html, TemplateResult } from 'lit';
+import { html, nothing, TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import {
@@ -14,7 +14,7 @@ import {
   ProviderState,
   TeamsHelper,
   mgtHtml,
-  customElement
+  customElementHelper
 } from '@microsoft/mgt-element';
 import { IGraph } from '@microsoft/mgt-element';
 import { Presence, User, Person } from '@microsoft/microsoft-graph-types';
@@ -26,38 +26,58 @@ import { getUserWithPhoto } from '../../graph/graph.userWithPhoto';
 import { getSvg, SvgIcon } from '../../utils/SvgHelper';
 import { getUserPresence } from '../../graph/graph.presence';
 import { getPersonCardGraphData, createChat, sendMessage } from './mgt-person-card.graph';
-import { MgtPerson } from '../mgt-person/mgt-person';
+import { MgtPerson, registerMgtPersonComponent } from '../mgt-person/mgt-person';
 import { styles } from './mgt-person-card-css';
-import { MgtContact } from '../mgt-contact/mgt-contact';
-import { MgtFileList } from '../mgt-file-list/mgt-file-list';
-import { MgtMessages } from '../mgt-messages/mgt-messages';
-import { MgtOrganization } from '../mgt-organization/mgt-organization';
-import { MgtProfile } from '../mgt-profile/mgt-profile';
-import { MgtPersonCardConfig, MgtPersonCardState } from './mgt-person-card.types';
+import { MgtContact, registerMgtContactComponent } from '../mgt-contact/mgt-contact';
+import { MgtFileList, registerMgtFileListComponent } from '../mgt-file-list/mgt-file-list';
+import { MgtMessages, registerMgtMessagesComponent } from '../mgt-messages/mgt-messages';
+import { MgtOrganization, registerMgtOrganizationComponent } from '../mgt-organization/mgt-organization';
+import { MgtProfile, registerMgtProfileComponent } from '../mgt-profile/mgt-profile';
+import { MgtPersonCardState } from './mgt-person-card.types';
+import { MgtPersonCardConfig } from './MgtPersonCardConfig';
+import { getMgtPersonCardScopes } from './getMgtPersonCardScopes';
 import { strings } from './strings';
+import { isUser } from '../../graph/entityType';
 
 import '../sub-components/mgt-spinner/mgt-spinner';
 
 export * from './mgt-person-card.types';
 
-import { fluentTabs, fluentTab, fluentTabPanel, fluentButton, fluentTextField } from '@fluentui/web-components';
+import {
+  fluentTabs,
+  fluentTab,
+  fluentTabPanel,
+  fluentButton,
+  fluentTextField,
+  fluentCard
+} from '@fluentui/web-components';
 import { registerFluentComponents } from '../../utils/FluentComponents';
 import { BasePersonCardSection, CardSection } from '../BasePersonCardSection';
+import { buildComponentName, registerComponent } from '@microsoft/mgt-element';
+import { registerMgtSpinnerComponent } from '../sub-components/mgt-spinner/mgt-spinner';
+import { IHistoryClearer, IExpandable } from './types';
 
-registerFluentComponents(fluentTabs, fluentTab, fluentTabPanel, fluentButton, fluentTextField);
-
-// eslint-disable-next-line @typescript-eslint/tslint/config
 interface MgtPersonCardStateHistory {
-  // eslint-disable-next-line @typescript-eslint/tslint/config
   state: MgtPersonCardState;
-  // eslint-disable-next-line @typescript-eslint/tslint/config
   personDetails: IDynamicPerson;
-  // eslint-disable-next-line @typescript-eslint/tslint/config
   personImage: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/tslint/config
-type HoverStatesActions = 'email' | 'chat' | 'video' | 'call';
+export const registerMgtPersonCardComponent = () => {
+  registerFluentComponents(fluentCard, fluentTabs, fluentTab, fluentTabPanel, fluentButton, fluentTextField);
+  // register self first to avoid infinite loop due to circular ref between person and person card and organization
+  registerComponent('person-card', MgtPersonCard);
+
+  registerMgtSpinnerComponent();
+  // these components newed up rather than created declaratively
+  registerMgtContactComponent();
+  registerMgtOrganizationComponent();
+  registerMgtMessagesComponent();
+  registerMgtFileListComponent();
+  registerMgtProfileComponent();
+  // only register person if not already registered
+  if (!customElements.get(buildComponentName('person'))) registerMgtPersonComponent();
+};
 
 /**
  * Web Component used to show detailed data for a person in the Microsoft Graph
@@ -96,10 +116,48 @@ type HoverStatesActions = 'email' | 'chat' | 'video' | 'call';
  * @cssprop --person-card-fluent-background-color-hover - {Color} The hover background color of the fluent buttons in person card component
  * @cssprop --person-card-chat-input-hover-color - {Color} The chat input hover color
  * @cssprop --person-card-chat-input-focus-color - {Color} The chat input focus color
+ * @cssprop --contact-title-color - {Color} The color of the contact title in the contact section of the person card component
+ * @cssprop --contact-value-color - {Color} The color of the contact value in the contact section of the person card component
+ * @cssprop --contact-link-color - {Color} The color of the contact link in the contact section of the person card component
+ * @cssprop --contact-link-hover-color - {Color} The hover color of the contact link in the contact section of the person card component
+ * @cssprop --contact-background-color - {Color} The background color of the contact section in person card component
+ * @cssprop --contact-copy-icon-color - {Color} The color of the copy icon in the contact section of the person card component
+ * @cssprop --message-subject-font-size - {Length} The font size of the message subject in the message section of the person card component
+ * @cssprop --message-subject-font-weight - {FontWeight} The font weight of the message subject in the message section of the person card component
+ * @cssprop --message-subject-line-height - {Length} The line height of the message subject in the message section of the person card component
+ * @cssprop --message-from-font-size - {Length} The font size of the message sender in the message section of the person card component
+ * @cssprop --message-from-font-weight - {FontWeight} The font weight of the message sender in the message section of the person card component
+ * @cssprop --message-subject-color - {Color} The color of the message subject in the message section of the person card component
+ * @cssprop --message-from-color - {Color} The color of the message sender in the message section of the person card component
+ * @cssprop --message-color - {Color} The color of the message in the message section of the person card component
+ * @cssprop --message-hover-color - {Color} The hover color of the message section of the person card component
+ * @cssprop --message-date-color - {Color} The color of the message date in the message section of the person card component
+ * @cssprop --message-from-line-height - {Length} The line height of the message sender in the message section of the person card component
+ * @cssprop --profile-background-color - {Color} The background color of the profile section in the person card component
+ * @cssprop --profile-title-color - {Color} The color of the profile title in the profile section of the person card component
+ * @cssprop --profile-section-title-color - {Color} The color of the profile section title in the profile section of the person card component
+ * @cssprop --profile-token-item-color - {Color} The color of the profile token item in the profile section of the person card component
+ * @cssprop --profile-token-item-background-color - {Color} The background color of the profile token item in the profile section of the person card component
+ * @cssprop --profile-token-overflow-color - {Color} The color of the profile token overflow in the profile section of the person card component
+ * @cssprop --organization-active-org-member-border-color - {Color} The border color of the active organization member in the organization section of the person card component
+ * @cssprop --organization-active-org-member-target-background-color - {Color} The background color of the active organization member target in the organization section of the person card component
+ * @cssprop --organization-coworker-hover-color - {Color} The hover color of the coworker in the organization section of the person card component
+ * @cssprop --organization-coworker-border-color - {Color} The border color of the coworker in the organization section of the person card component
+ * @cssprop --organization-coworker-person-avatar-size - {Length} The avatar size of the coworker in the organization section of the person card component
+ * @cssprop --organization-member-person-avatar-size - {Length} The avatar size of the member in the organization section of the person card component
+ * @cssprop --organization-direct-report-person-avatar-size - {Length} The avatar size of the direct report in the organization section of the person card component
+ * @cssprop --organization-title-color - {Color} The color of the organization title in the organization section of the person card component
+ * @cssprop --organization-sub-title-color - {Color} The color of the organization sub-title in the organization section of the person card component
+ * @cssprop --organization-hover-color - {Color} The hover color of the organization section of the person card component
+ * @cssprop --profile-background-color - {Color} The background color of the profile section in the person card component
+ * @cssprop --profile-title-color - {Color} The color of the profile title in the profile section of the person card component
+ * @cssprop --profile-section-title-color - {Color} The color of the profile section title of the person card component
+ * @cssprop --profile-token-item-color - {Color} The color of the token item in the profile section of the person card component
+ * @cssprop --profile-token-item-background-color - {Color} The background color of the token item in the profile section of the person card component
+ * @cssprop --profile-token-overflow-color - {Color} The color of the token overflow in the profile section of the person card component
+ *
  */
-@customElement('person-card')
-// @customElement('mgt-person-card')
-export class MgtPersonCard extends MgtTemplatedComponent {
+export class MgtPersonCard extends MgtTemplatedComponent implements IHistoryClearer, IExpandable {
   /**
    * Array of styles to apply to the element. The styles should be defined
    * using the `css` tag function.
@@ -131,83 +189,8 @@ export class MgtPersonCard extends MgtTemplatedComponent {
    * @memberof MgtPersonCard
    */
   public static get requiredScopes(): string[] {
-    return MgtPersonCard.getScopes();
+    return getMgtPersonCardScopes();
   }
-
-  /**
-   * Scopes used to fetch data for the component
-   *
-   * @static
-   * @return {*}  {string[]}
-   * @memberof MgtPersonCard
-   */
-  public static getScopes(): string[] {
-    const scopes: string[] = [];
-
-    if (this.config.sections.files) {
-      scopes.push('Sites.Read.All');
-    }
-
-    if (this.config.sections.mailMessages) {
-      scopes.push('Mail.Read');
-      scopes.push('Mail.ReadBasic');
-    }
-
-    if (this.config.sections.organization) {
-      scopes.push('User.Read.All');
-
-      if (typeof this.config.sections.organization !== 'boolean' && this.config.sections.organization.showWorksWith) {
-        scopes.push('People.Read.All');
-      }
-    }
-
-    if (this.config.sections.profile) {
-      scopes.push('User.Read.All');
-    }
-
-    if (this.config.useContactApis) {
-      scopes.push('Contacts.Read');
-    }
-
-    if (scopes.indexOf('User.Read.All') < 0) {
-      // at minimum, we need these scopes
-      scopes.push('User.ReadBasic.All');
-      scopes.push('User.Read');
-    }
-
-    if (scopes.indexOf('People.Read.All') < 0) {
-      // at minimum, we need these scopes
-      scopes.push('People.Read');
-    }
-
-    scopes.push('Chat.Create', 'Chat.ReadWrite');
-
-    // return unique
-    return [...new Set(scopes)];
-  }
-
-  /**
-   * Global configuration object for
-   * all person card components
-   *
-   * @static
-   * @type {MgtPersonCardConfig}
-   * @memberof MgtPersonCard
-   */
-  public static get config() {
-    return this._config;
-  }
-
-  private static _config: MgtPersonCardConfig = {
-    sections: {
-      files: true,
-      mailMessages: true,
-      organization: { showWorksWith: true },
-      profile: true
-    },
-    useContactApis: true,
-    isSendMessageVisible: true
-  };
 
   /**
    * Set the person details to render
@@ -376,7 +359,7 @@ export class MgtPersonCard extends MgtTemplatedComponent {
 
   // eslint-disable-next-line @typescript-eslint/naming-convention
   private get internalPersonDetails(): IDynamicPerson {
-    return (this._cardState && this._cardState.person) || this.personDetails;
+    return this._cardState?.person || this.personDetails;
   }
 
   constructor() {
@@ -441,7 +424,7 @@ export class MgtPersonCard extends MgtTemplatedComponent {
    * @memberof MgtPersonCard
    */
   public goBack = (): void => {
-    if (!this._history || !this._history.length) {
+    if (!this._history?.length) {
       return;
     }
 
@@ -468,7 +451,7 @@ export class MgtPersonCard extends MgtTemplatedComponent {
   public clearHistory(): void {
     this._currentSection = null;
 
-    if (!this._history || !this._history.length) {
+    if (!this._history?.length) {
       return;
     }
 
@@ -476,7 +459,7 @@ export class MgtPersonCard extends MgtTemplatedComponent {
     this._history = [];
 
     this._cardState = historyState.state;
-    this._personDetails = historyState.state;
+    this._personDetails = historyState.personDetails;
     this.personImage = historyState.personImage;
     this.loadSections();
   }
@@ -523,9 +506,8 @@ export class MgtPersonCard extends MgtTemplatedComponent {
       : null;
 
     ariaLabel = this.strings.goBackLabel;
-    const navigationTemplate =
-      this._history && this._history.length
-        ? html`
+    const navigationTemplate = this._history?.length
+      ? html`
             <div class="nav">
               <fluent-button 
                 appearance="lightweight"
@@ -536,7 +518,7 @@ export class MgtPersonCard extends MgtTemplatedComponent {
                </fluent-button>
             </div>
           `
-        : null;
+      : null;
 
     // Check for a person-details template
     let personDetailsTemplate = this.renderTemplate('person-details', {
@@ -577,7 +559,7 @@ export class MgtPersonCard extends MgtTemplatedComponent {
      `;
   }
 
-  private handleEndOfCard = (e: KeyboardEvent) => {
+  private readonly handleEndOfCard = (e: KeyboardEvent) => {
     if (e && e.code === 'Tab') {
       const endOfCardEl = this.renderRoot.querySelector<HTMLElement>('#end-of-container');
       if (endOfCardEl) {
@@ -645,7 +627,7 @@ export class MgtPersonCard extends MgtTemplatedComponent {
    */
   protected renderPersonSubtitle(person?: IDynamicPerson): TemplateResult {
     person = person || this.internalPersonDetails;
-    if (!person.department) {
+    if (!isUser(person) || !person.department) {
       return;
     }
     return html`
@@ -814,7 +796,7 @@ export class MgtPersonCard extends MgtTemplatedComponent {
       `;
     });
 
-    const additionalPanelTemplates = this.sections.map((section, i) => {
+    const additionalPanelTemplates = this.sections.map(section => {
       return html`
         <fluent-tab-panel slot="tabpanel">
           <div class="inserted">
@@ -913,7 +895,7 @@ export class MgtPersonCard extends MgtTemplatedComponent {
    * @memberof MgtPersonCard
    */
   protected renderCurrentSection(): TemplateResult {
-    if ((!this.sections || !this.sections.length) && !this.hasTemplate('additional-details')) {
+    if (!this.sections?.length && !this.hasTemplate('additional-details')) {
       return;
     }
 
@@ -939,16 +921,20 @@ export class MgtPersonCard extends MgtTemplatedComponent {
    * @returns {TemplateResult}
    * @memberof MgtPersonCard
    */
-  protected renderMessagingSection(): TemplateResult {
+  protected renderMessagingSection() {
     const person = this.personDetails as User;
     const user = this._me.userPrincipalName;
     const chatInput = this._chatInput;
     if (person?.userPrincipalName === user) {
       return;
     } else {
-      return html`
+      return MgtPersonCardConfig.isSendMessageVisible
+        ? html`
       <div class="message-section">
-        <fluent-text-field appearance="outline" placeholder="${this.strings.quickMessage}"
+        <fluent-text-field
+          autocomplete="off"
+          appearance="outline"
+          placeholder="${this.strings.quickMessage}"
           .value=${chatInput}
           @input=${(e: Event) => {
             this._chatInput = (e.target as HTMLInputElement).value;
@@ -963,7 +949,8 @@ export class MgtPersonCard extends MgtTemplatedComponent {
           ${!this.isSending ? getSvg(SvgIcon.Send) : getSvg(SvgIcon.Confirmation)}
         </fluent-button>
       </div>
-      `;
+      `
+        : nothing;
     }
   }
 
@@ -982,7 +969,7 @@ export class MgtPersonCard extends MgtTemplatedComponent {
     if (!this.personDetails && this.inheritDetails) {
       // User person details inherited from parent tree
       let parent = this.parentElement;
-      while (parent && parent.tagName !== 'MGT-PERSON') {
+      while (parent && parent.tagName !== `${customElementHelper.prefix}-PERSON`.toUpperCase()) {
         parent = parent.parentElement;
       }
 
@@ -1014,8 +1001,11 @@ export class MgtPersonCard extends MgtTemplatedComponent {
 
     // check if personDetail already populated
     if (this.personDetails) {
-      const user = this.personDetails as User;
-      const id = user.userPrincipalName || user.id;
+      const user = this.personDetails;
+      let id: string;
+      if (isUser(user)) {
+        id = user.userPrincipalName || user.id;
+      }
 
       // if we have an id but no email, we should get data from the graph
       // in some graph calls, the user object does not contain the email
@@ -1033,9 +1023,9 @@ export class MgtPersonCard extends MgtTemplatedComponent {
       // Use the personQuery to find our person.
       const people = await findPeople(graph, this.personQuery, 1);
 
-      if (people && people.length) {
+      if (people?.length) {
         this.personDetails = people[0];
-        await getPersonImage(graph, this.personDetails, MgtPersonCard.config.useContactApis).then(image => {
+        await getPersonImage(graph, this.personDetails, MgtPersonCardConfig.useContactApis).then(image => {
           if (image) {
             this.personDetails.personImage = image;
             this.personImage = image;
@@ -1052,7 +1042,7 @@ export class MgtPersonCard extends MgtTemplatedComponent {
     };
     if (!this.personPresence && this.showPresence) {
       try {
-        if (this.personDetails && this.personDetails.id) {
+        if (this.personDetails?.id) {
           this.personPresence = await getUserPresence(graph, this.personDetails.id);
         } else {
           this.personPresence = defaultPresence;
@@ -1065,12 +1055,7 @@ export class MgtPersonCard extends MgtTemplatedComponent {
 
     // populate state
     if (this.personDetails?.id) {
-      this._cardState = await getPersonCardGraphData(
-        graph,
-        this.personDetails,
-        this._me === this.personDetails.id,
-        MgtPersonCard.config
-      );
+      this._cardState = await getPersonCardGraphData(graph, this.personDetails, this._me === this.personDetails.id);
     }
 
     this.loadSections();
@@ -1087,7 +1072,7 @@ export class MgtPersonCard extends MgtTemplatedComponent {
    */
   protected sendQuickMessage = async (): Promise<void> => {
     const message = this._chatInput.trim();
-    if (!message || !message.length) {
+    if (!message?.length) {
       return;
     }
     const person = this.personDetails as User;
@@ -1138,12 +1123,12 @@ export class MgtPersonCard extends MgtTemplatedComponent {
     const user = this.personDetails as User;
     const person = this.personDetails as microsoftgraph.Person;
 
-    if (user && user.businessPhones && user.businessPhones.length) {
+    if (user?.businessPhones?.length) {
       const phone = user.businessPhones[0];
       if (phone) {
         window.open('tel:' + phone, '_blank', 'noreferrer');
       }
-    } else if (person && person.phones && person.phones.length) {
+    } else if (person?.phones?.length) {
       const businessPhones = this.getPersonBusinessPhones(person);
       const phone = businessPhones[0];
       if (phone) {
@@ -1160,11 +1145,11 @@ export class MgtPersonCard extends MgtTemplatedComponent {
    */
   protected chatUser = (message: string = null) => {
     const user = this.personDetails as User;
-    if (user && user.userPrincipalName) {
+    if (user?.userPrincipalName) {
       const users: string = user.userPrincipalName;
 
       let url = `https://teams.microsoft.com/l/chat/0/0?users=${users}`;
-      if (message && message.length) {
+      if (message?.length) {
         url += `&message=${message}`;
       }
 
@@ -1190,7 +1175,7 @@ export class MgtPersonCard extends MgtTemplatedComponent {
    */
   protected videoCallUser = () => {
     const user = this.personDetails as User;
-    if (user && user.userPrincipalName) {
+    if (user?.userPrincipalName) {
       const users: string = user.userPrincipalName;
 
       const url = `https://teams.microsoft.com/l/call/0/0?users=${users}&withVideo=true`;
@@ -1217,7 +1202,7 @@ export class MgtPersonCard extends MgtTemplatedComponent {
    */
   protected showExpandedDetails = () => {
     const root = this.renderRoot.querySelector('.root');
-    if (root && root.animate) {
+    if (root?.animate) {
       // play back
       root.animate(
         [
@@ -1260,22 +1245,19 @@ export class MgtPersonCard extends MgtTemplatedComponent {
 
     const { person, directReports, messages, files, profile } = this._cardState;
 
-    if (
-      MgtPersonCard.config.sections.organization &&
-      ((person && person.manager) || (directReports && directReports.length))
-    ) {
+    if (MgtPersonCardConfig.sections.organization && (person?.manager || directReports?.length)) {
       this.sections.push(new MgtOrganization(this._cardState, this._me));
     }
 
-    if (MgtPersonCard.config.sections.mailMessages && messages && messages.length) {
+    if (MgtPersonCardConfig.sections.mailMessages && messages?.length) {
       this.sections.push(new MgtMessages(messages));
     }
 
-    if (MgtPersonCard.config.sections.files && files && files.length) {
+    if (MgtPersonCardConfig.sections.files && files?.length) {
       this.sections.push(new MgtFileList());
     }
 
-    if (MgtPersonCard.config.sections.profile && profile) {
+    if (MgtPersonCardConfig.sections.profile && profile) {
       const profileSection = new MgtProfile(profile);
       if (profileSection.hasData) {
         this.sections.push(profileSection);
@@ -1289,7 +1271,7 @@ export class MgtPersonCard extends MgtTemplatedComponent {
     }
 
     const person = this.personDetails;
-    return person && person.personImage ? person.personImage : null;
+    return person?.personImage ? person.personImage : null;
   }
 
   private clearInputData() {
@@ -1336,13 +1318,13 @@ export class MgtPersonCard extends MgtTemplatedComponent {
     }
   }
 
-  private sendQuickMessageOnEnter = (e: KeyboardEvent) => {
+  private readonly sendQuickMessageOnEnter = (e: KeyboardEvent) => {
     if (e.code === 'Enter') {
       void this.sendQuickMessage();
     }
   };
 
-  private handleGoBack = (e: KeyboardEvent) => {
+  private readonly handleGoBack = (e: KeyboardEvent) => {
     if (e.code === 'Enter') {
       void this.goBack();
     }

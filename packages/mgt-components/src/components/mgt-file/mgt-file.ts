@@ -9,7 +9,7 @@ import { DriveItem } from '@microsoft/microsoft-graph-types';
 import { html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { styles } from './mgt-file-css';
-import { Providers, ProviderState, customElement } from '@microsoft/mgt-element';
+import { MgtTemplatedComponent, Providers, ProviderState } from '@microsoft/mgt-element';
 import {
   getDriveItemById,
   getDriveItemByPath,
@@ -31,7 +31,9 @@ import { OfficeGraphInsightString, ViewType } from '../../graph/types';
 import { getFileTypeIconUriByExtension } from '../../styles/fluent-icons';
 import { getSvg, SvgIcon } from '../../utils/SvgHelper';
 import { strings } from './strings';
-import { MgtFileBase } from './mgt-file-base';
+import { registerComponent } from '@microsoft/mgt-element';
+
+export const registerMgtFileComponent = () => registerComponent('file', MgtFile);
 
 /**
  * The File component is used to represent an individual file/folder from OneDrive or SharePoint by displaying information such as the file/folder name, an icon indicating the file type, and other properties such as the author, last modified date, or other details selected by the developer.
@@ -63,10 +65,7 @@ import { MgtFileBase } from './mgt-file-base';
  * @cssprop --file-line3-color - {Color} the third line text color.
  * @cssprop --file-line3-text-transform - {String} the third line text text transform. Default value is 400.
  */
-
-@customElement('file')
-// @customElement('mgt-file')
-export class MgtFile extends MgtFileBase {
+export class MgtFile extends MgtTemplatedComponent {
   /**
    * Array of styles to apply to the element. The styles should be defined
    * using the `css` tag function.
@@ -493,7 +492,7 @@ export class MgtFile extends MgtFileBase {
     while (!text && i < propertyList.length) {
       const current = propertyList[i].trim();
       switch (current) {
-        case 'size':
+        case 'size': {
           // convert size to kb, mb, gb
           let size = '0';
           if (driveItem.size) {
@@ -501,7 +500,8 @@ export class MgtFile extends MgtFileBase {
           }
           text = `${this.strings.sizeSubtitle}: ${size}`;
           break;
-        case 'lastModifiedDateTime':
+        }
+        case 'lastModifiedDateTime': {
           // convert date time
           let relativeDateString: string;
           let lastModifiedString: string;
@@ -514,6 +514,7 @@ export class MgtFile extends MgtFileBase {
           }
           text = lastModifiedString;
           break;
+        }
         default:
           text = driveItem[current] as string;
       }

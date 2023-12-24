@@ -1,6 +1,6 @@
 {
   "name": "@microsoft/mgt-sharepoint-provider",
-  "version": "2.0.0",
+  "version": "3.0.1",
   "description": "The Microsoft Graph Toolkit SharePoint Provider",
   "keywords": [
     "microsoft graph",
@@ -38,6 +38,7 @@
     "lint": "eslint -c ../../../.eslintrc.js 'src/**/*.ts'",
     "postpack": "cpx *.tgz ../../../artifacts"
   },
+  "sideEffects": false,
   "dependencies": {
     "@microsoft/mgt-element": "*"
   },

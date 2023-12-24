@@ -5,10 +5,10 @@
  * -------------------------------------------------------------------------------------------
  */
 
-@import '../base-person-card-section.scss';
-@import '../../styles/shared-styles.scss';
-@import '../../styles/shared-sass-variables.scss';
-@import './mgt-contact.theme.scss';
+@import '../base-person-card-section';
+@import '../../styles/shared-styles';
+@import '../../styles/shared-sass-variables';
+@import './mgt-contact.theme';
 
 :host {
   position: relative;
@@ -29,6 +29,7 @@
         margin-left: 20px;
         margin-top: 10px;
         line-height: 20px;
+
         svg {
           fill: $contact-copy-icon-color;
         }
@@ -53,7 +54,6 @@
 
           .part__link {
             color: $contact-link-color;
-            font-family: $font-family;
             font-size: 14px;
             cursor: pointer;
             text-overflow: ellipsis;
@@ -123,26 +123,28 @@
       direction: ltr;
     }
   }
+
   .part__icon {
-    margin: 10px 20px 0px 0px !important;
+    margin: 10px 20px 0 0 !important;
   }
+
   &.compact {
     .part__icon {
       margin-left: 6px !important;
-      margin-top: 0px !important;
+      margin-top: 0 !important;
     }
   }
 }
 
 @media (forced-colors: active) and (prefers-color-scheme: dark) {
   .root svg {
-    fill: rgb(255, 255, 255) !important;
+    fill: rgb(255 255 255) !important;
     fill-rule: nonzero !important;
     clip-rule: nonzero !important;
 
     path,
     rect {
-      fill: rgb(255, 255, 255) !important;
+      fill: rgb(255 255 255) !important;
       fill-rule: nonzero !important;
       clip-rule: nonzero !important;
     }
@@ -151,13 +153,13 @@
 
 @media (forced-colors: active) and (prefers-color-scheme: light) {
   .root svg {
-    fill: rgb(0, 0, 0) !important;
+    fill: rgb(0 0 0) !important;
     fill-rule: nonzero !important;
     clip-rule: nonzero !important;
 
     path,
     rect {
-      fill: rgb(0, 0, 0) !important;
+      fill: rgb(0 0 0) !important;
       fill-rule: nonzero !important;
       clip-rule: nonzero !important;
     }

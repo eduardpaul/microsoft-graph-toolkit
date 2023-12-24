@@ -1,6 +1,6 @@
 {
   "name": "@microsoft/mgt-react",
-  "version": "2.0.0",
+  "version": "3.0.1",
   "description": "Microsoft Graph Toolkit React wrapper class",
   "author": "Microsoft",
   "license": "MIT",
@@ -30,9 +30,10 @@
     "compile:watch": "tsc -w",
     "build:watch": "npm run compile:watch",
     "postpack": "cpx *.tgz ../../artifacts",
-    "analyze": "custom-elements-manifest analyze --litelement --globs \"../*/src/**/*.ts\" --outdir temp",
+    "analyze": "custom-elements-manifest analyze --globs \"../*/src/**/*.ts\" --outdir temp",
     "generate": "npm run analyze && node ./scripts/generate.js"
   },
+  "sideEffects": false,
   "dependencies": {
     "@microsoft/mgt-components": "*",
     "@microsoft/mgt-element": "*",
@@ -41,8 +42,8 @@
     "wc-react": "^0.5.0"
   },
   "peerDependencies": {
-    "react": "^17.0.1",
-    "react-dom": "^17.0.1"
+    "react": "^17.0.1 || ^18.0.0",
+    "react-dom": "^17.0.1 || ^18.0.0"
   },
   "publishConfig": {
     "access": "public"

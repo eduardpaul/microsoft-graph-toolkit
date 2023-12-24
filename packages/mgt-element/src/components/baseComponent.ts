@@ -109,7 +109,7 @@ export abstract class MgtBaseComponent extends LitElement {
    * @protected
    * @memberof MgtBaseComponent
    */
-  protected get strings(): { [x: string]: string } {
+  protected get strings(): Record<string, string> {
     return {};
   }
 
@@ -162,7 +162,7 @@ export abstract class MgtBaseComponent extends LitElement {
    *
    * @param _changedProperties Map of changed properties with old values
    */
-  protected firstUpdated(changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
+  protected firstUpdated(changedProperties: PropertyValueMap<unknown> | Map<PropertyKey, unknown>): void {
     super.firstUpdated(changedProperties);
     this._isFirstUpdated = true;
     Providers.onProviderUpdated(this.handleProviderUpdates);
@@ -202,7 +202,7 @@ export abstract class MgtBaseComponent extends LitElement {
    */
   protected fireCustomEvent(
     eventName: string,
-    detail?: any,
+    detail?: unknown,
     bubbles = false,
     cancelable = false,
     composed = false
@@ -268,7 +268,7 @@ export abstract class MgtBaseComponent extends LitElement {
       return Promise.resolve();
     } else {
       // Signed in, load the internal component state
-      // eslint-disable-next-line @typescript-eslint/no-misused-promises
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises, no-async-promise-executor
       const loadStatePromise = new Promise<void>(async (resolve, reject) => {
         try {
           this.setLoadingState(true);
@@ -311,21 +311,21 @@ export abstract class MgtBaseComponent extends LitElement {
     this.requestUpdate('isLoadingState');
   };
 
-  private handleProviderUpdates = () => {
+  private readonly handleProviderUpdates = () => {
     void this.requestStateUpdate();
   };
 
-  private handleActiveAccountUpdates = () => {
+  private readonly handleActiveAccountUpdates = () => {
     this.clearState();
     void this.requestStateUpdate();
   };
 
-  private handleLocalizationChanged = () => {
+  private readonly handleLocalizationChanged = () => {
     LocalizationHelper.updateStringsForTag(this.tagName, this.strings);
     this.requestUpdate();
   };
 
-  private handleDirectionChanged = () => {
+  private readonly handleDirectionChanged = () => {
     this.direction = LocalizationHelper.getDocumentDirection();
   };
 }

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/tslint/config */
 /**
  * -------------------------------------------------------------------------------------------
  * Copyright (c) Microsoft Corporation.  All Rights Reserved.  Licensed under the MIT License.
@@ -7,6 +6,13 @@
  */
 
 import { EventDispatcher, EventHandler } from './EventDispatcher';
+
+type ComponentLocalizationRecord = Record<string, string>;
+type LocalizationRecord = Record<string, ComponentLocalizationRecord>;
+
+type LocalizationStorage = {
+  _components: LocalizationRecord;
+} & Record<string, string>;
 
 /**
  * Valid values for the direction attribute
@@ -21,16 +27,15 @@ export type Direction = 'ltr' | 'rtl' | 'auto';
  * @class LocalizationHelper
  */
 export class LocalizationHelper {
-  static _strings: any;
+  static _strings: LocalizationStorage;
 
-  static _stringsEventDispatcher: EventDispatcher<any> = new EventDispatcher();
+  static _stringsEventDispatcher = new EventDispatcher<unknown>();
 
-  static _directionEventDispatcher: EventDispatcher<any> = new EventDispatcher();
+  static _directionEventDispatcher = new EventDispatcher<unknown>();
 
   private static mutationObserver: MutationObserver;
 
   public static get strings() {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return this._strings;
   }
 
@@ -40,8 +45,7 @@ export class LocalizationHelper {
    * @static
    * @memberof LocalizationHelper
    */
-  public static set strings(value: any) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  public static set strings(value: LocalizationStorage) {
     this._strings = value;
     this._stringsEventDispatcher.fire(null);
   }
@@ -75,20 +79,20 @@ export class LocalizationHelper {
    * @param {EventHandler<ProvidersChangedState>} event
    * @memberof LocalizationHelper
    */
-  public static onStringsUpdated(event: EventHandler<any>) {
+  public static onStringsUpdated(event: EventHandler<unknown>) {
     this._stringsEventDispatcher.add(event);
   }
 
-  public static removeOnStringsUpdated(event: EventHandler<any>) {
+  public static removeOnStringsUpdated(event: EventHandler<unknown>) {
     this._stringsEventDispatcher.remove(event);
   }
 
-  public static onDirectionUpdated(event: EventHandler<any>) {
+  public static onDirectionUpdated(event: EventHandler<unknown>) {
     this._directionEventDispatcher.add(event);
     this.initDirection();
   }
 
-  public static removeOnDirectionUpdated(event: EventHandler<any>) {
+  public static removeOnDirectionUpdated(event: EventHandler<unknown>) {
     this._directionEventDispatcher.remove(event);
   }
 
@@ -128,7 +132,7 @@ export class LocalizationHelper {
    * @returns
    * @memberof LocalizationHelper
    */
-  public static updateStringsForTag(tagName: string, stringObj: Record<string, any>) {
+  public static updateStringsForTag(tagName: string, stringObj: Record<string, string>) {
     tagName = tagName.toLowerCase();
 
     if (tagName.startsWith('mgt-')) {
@@ -138,21 +142,17 @@ export class LocalizationHelper {
     if (this._strings && stringObj) {
       // check for top level strings, applied per component, overridden by specific component def
       for (const prop of Object.entries(stringObj)) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        if (this._strings[prop[0]]) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-          stringObj[prop[0]] = this._strings[prop[0]];
+        const overrideValue = this._strings[prop[0]];
+        if (typeof overrideValue === 'string') {
+          stringObj[prop[0]] = overrideValue;
         }
       }
+
       // strings defined component specific
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if (this._strings._components && this._strings._components[tagName]) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-        const strings: any = this._strings._components[tagName];
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      if (this._strings._components?.[tagName]) {
+        const strings = this._strings._components[tagName];
         for (const key of Object.keys(strings)) {
           if (stringObj[key]) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
             stringObj[key] = strings[key];
           }
         }

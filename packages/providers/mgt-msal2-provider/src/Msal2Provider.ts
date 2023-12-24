@@ -146,6 +146,14 @@ export interface Msal2Config extends Msal2ConfigBase {
    * The base URL for the graph client
    */
   baseURL?: GraphEndpoint;
+
+  /**
+   * CustomHosts
+   *
+   * @type {string[]}
+   * @memberof Msal2Config
+   */
+  customHosts?: string[];
 }
 
 /**
@@ -318,9 +326,15 @@ export class Msal2Provider extends IProvider {
     return this.isMultipleAccountEnabled;
   }
 
-  private sessionStorageRequestedScopesKey = 'mgt-requested-scopes';
-  private sessionStorageDeniedScopesKey = 'mgt-denied-scopes';
-  private homeAccountKey = '275f3731-e4a4-468a-bf9c-baca24b31e26';
+  private get sessionStorageRequestedScopesKey() {
+    return 'mgt-requested-scopes';
+  }
+  private get sessionStorageDeniedScopesKey() {
+    return 'mgt-denied-scopes';
+  }
+  private get homeAccountKey() {
+    return '275f3731-e4a4-468a-bf9c-baca24b31e26';
+  }
 
   public constructor(config: Msal2Config | Msal2PublicClientApplicationConfig) {
     super();
@@ -372,6 +386,7 @@ export class Msal2Provider extends IProvider {
     } else {
       throw new Error('either clientId or publicClientApplication must be provided');
     }
+    await this._publicClientApplication.initialize();
 
     this.ms_config.system = msalConfig.system || {};
     this.ms_config.system.iframeHashTimeout = msalConfig.system.iframeHashTimeout || 10000;
@@ -388,6 +403,7 @@ export class Msal2Provider extends IProvider {
     this.isMultipleAccountEnabled =
       typeof msal2config.isMultiAccountEnabled !== 'undefined' ? msal2config.isMultiAccountEnabled : true;
     this.baseURL = typeof msal2config.baseURL !== 'undefined' ? msal2config.baseURL : this.baseURL;
+    this.customHosts = msal2config.customHosts;
 
     this.graph = createFromProvider(this);
     try {
@@ -398,6 +414,7 @@ export class Msal2Provider extends IProvider {
         await this.trySilentSignIn();
       }
     } catch (e) {
+      console.error('🦒: Problem attempting to sign in', e);
       throw e;
     }
   }
@@ -717,6 +734,7 @@ export class Msal2Provider extends IProvider {
             const response = await this._publicClientApplication.acquireTokenPopup(accessTokenRequest);
             return response.accessToken;
           } catch (popUpErr) {
+            console.error('🦒: problem with pop-up sign in', popUpErr);
             throw popUpErr;
           }
         }

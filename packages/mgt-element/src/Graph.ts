@@ -21,7 +21,7 @@ import { IGraph, MICROSOFT_GRAPH_DEFAULT_ENDPOINT } from './IGraph';
 import { IProvider } from './providers/IProvider';
 import { Batch } from './utils/Batch';
 import { ComponentMiddlewareOptions } from './utils/ComponentMiddlewareOptions';
-import { chainMiddleware } from './utils/GraphHelpers';
+import { chainMiddleware } from './utils/chainMiddleware';
 import { SdkVersionMiddleware } from './utils/SdkVersionMiddleware';
 import { PACKAGE_VERSION } from './utils/version';
 import { customElementHelper } from './components/customElementHelper';
@@ -72,9 +72,9 @@ export class Graph implements IGraph {
     return this._version;
   }
 
-  private _client: Client;
+  private readonly _client: Client;
   private _componentName: string;
-  private _version: string;
+  private readonly _version: string;
 
   constructor(client: Client, version: string = GRAPH_VERSION) {
     this._client = client;
@@ -159,6 +159,7 @@ export const createFromProvider = (provider: IProvider, version?: string, compon
   const baseURL = provider.baseURL ? provider.baseURL : MICROSOFT_GRAPH_DEFAULT_ENDPOINT;
   const client = Client.initWithMiddleware({
     middleware: chainMiddleware(...middleware),
+    customHosts: provider.customHosts ? new Set(provider.customHosts) : null,
     baseUrl: baseURL
   });
 

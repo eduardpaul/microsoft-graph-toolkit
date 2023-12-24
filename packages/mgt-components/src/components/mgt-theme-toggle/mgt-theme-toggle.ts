@@ -7,13 +7,17 @@
 
 import { html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
-import { customElement, MgtBaseComponent } from '@microsoft/mgt-element';
+import { MgtBaseComponent } from '@microsoft/mgt-element';
 import { fluentSwitch } from '@fluentui/web-components';
 import { registerFluentComponents } from '../../utils/FluentComponents';
 import { applyTheme } from '../../styles/theme-manager';
 import { strings } from './strings';
+import { registerComponent } from '@microsoft/mgt-element';
 
-registerFluentComponents(fluentSwitch);
+export const registerMgtThemeToggleComponent = () => {
+  registerFluentComponents(fluentSwitch);
+  registerComponent('theme-toggle', MgtThemeToggle);
+};
 
 /**
  * Toggle to switch between light and dark mode
@@ -24,8 +28,7 @@ registerFluentComponents(fluentSwitch);
  * @class MgtDarkToggle
  * @extends {MgtBaseComponent}
  */
-@customElement('theme-toggle')
-class MgtThemeToggle extends MgtBaseComponent {
+export class MgtThemeToggle extends MgtBaseComponent {
   constructor() {
     super();
     const prefersDarkMode = window.matchMedia('(prefers-color-scheme:dark)').matches;
@@ -71,7 +74,7 @@ class MgtThemeToggle extends MgtBaseComponent {
    * @param {Map<string, any>} changedProperties
    * @memberof MgtDarkToggle
    */
-  updated(changedProperties: Map<string, any>): void {
+  updated(changedProperties: Map<string, unknown>): void {
     if (changedProperties.has('darkModeActive')) {
       this.applyTheme(this.darkModeActive);
     }
@@ -93,9 +96,8 @@ class MgtThemeToggle extends MgtBaseComponent {
 `;
   }
 
-  private onSwitchChanged = (e: Event) => {
+  private readonly onSwitchChanged = (e: Event) => {
     this.darkModeActive = (e.target as HTMLInputElement).checked;
-    this.fireCustomEvent('darkmodechanged', this.darkModeActive);
   };
 
   private applyTheme(active: boolean) {
@@ -104,5 +106,6 @@ class MgtThemeToggle extends MgtBaseComponent {
 
     document.body.classList.remove('mgt-dark-mode', 'mgt-light-mode');
     document.body.classList.add(`mgt-${targetTheme}-mode`);
+    this.fireCustomEvent('darkmodechanged', this.darkModeActive, true, false, true);
   }
 }

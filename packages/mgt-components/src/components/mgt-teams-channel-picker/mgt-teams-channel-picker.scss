@@ -6,22 +6,21 @@
  */
 
 @import '../../../../../node_modules/office-ui-fabric-core/dist/sass/References';
-@import '../../styles/shared-styles.scss';
-@import './mgt-teams-channel-picker.theme.scss';
+@import '../../styles/shared-styles';
+@import './mgt-teams-channel-picker.theme';
 
-:host,
-:host mgt-teams-channel-picker {
-  font-family: $font-family;
-
+:host {
   .container {
     display: flex;
     flex-direction: column;
+    position: relative;
   }
 
   .dropdown {
-    z-index: 1;
     display: none;
-    margin-top: 4px;
+    position: absolute;
+    z-index: 1000;
+    top: 34px;
 
     &.visible {
       display: flex;
@@ -32,7 +31,7 @@
         width: 24px;
         position: inherit;
         border-radius: 50%;
-        margin: 0px 6px;
+        margin: 0 6px;
       }
 
       &-start-slot {
@@ -47,7 +46,6 @@
 
   .search-error-text,
   .loading-text {
-    font-family: $font-family;
     font-style: normal;
     font-weight: 400;
     font-size: 14px;
@@ -61,56 +59,162 @@
     padding: 5px;
 
     .loading-text {
-      color: var(--color, #0078d4);
       margin: auto;
     }
   }
-}
 
-:host fluent-card {
-  --fill-color: var(--dropdown-background-color, --fill-color);
-  --card-height: auto;
-  --width: var(--card-width);
-}
+  fluent-card {
+    background: $dropdown-card-background-color;
+    padding: 2px;
 
-:host fluent-text-field {
-  width: 100%;
-  --fill-color: var(--color, $color);
-  --neutral-fill-input-rest: var(--input-background-color, #ffffff);
-  --input-placeholder-rest: var(--placeholder-color, --input-placeholder-rest);
-  --input-placeholder-hover: var(--placeholder-color--focus, --input-placeholder-hover);
-}
-:host fluent-tree-view {
-  --tree-item-nested-width: 2em;
-}
-
-:host fluent-tree-item {
-  --tree-item-nested-width: 2em;
-  --neutral-foreground-rest: var(--color, $color);
-  --neutral-fill-stealth-hover: var(--dropdown-item-hover-background, --neutral-fill-stealth-hover);
-  --neutral-fill-secondary-rest: var(--dropdown-item-selected-background, --neutral-fill-secondary-rest);
-  --neutral-fill-stealth-rest: var(--dropdown-background-color, --neutral-fill-stealth-rest);
-}
-
-:host fluent-tree-view {
-  min-width: 100%;
-}
-
-:host fluent-breadcrumb-item {
-  .team-parent-name {
-    font-weight: bold;
+    --card-height: auto;
+    --width: var(--card-width);
   }
-  .team-photo {
-    width: 19px;
-    position: inherit;
-    border-radius: 50%;
-  }
-  .arrow {
-    margin-left: 8px;
-    margin-right: 8px;
 
-    svg {
-      stroke: var(--arrow-fill, $color);
+  fluent-text-field {
+    width: 100%;
+
+    &::part(root) {
+      background: $input-background;
+
+      &:hover {
+        background: $input-hover-background;
+      }
+
+      &:focus,
+      &:focus-within {
+        background: $input-focus-background;
+      }
+    }
+
+    &::part(control) {
+      word-spacing: inherit;
+      text-indent: inherit;
+      letter-spacing: inherit;
+
+      &::placeholder {
+        color: $placeholder-text-color;
+      }
+
+      &:hover {
+        &::placeholder {
+          color: $placeholder-hover-text-color;
+        }
+      }
+
+      &:focus,
+      &:focus-within {
+        &::placeholder {
+          color: $placeholder-focus-text-color;
+        }
+      }
+    }
+
+    .search-icon {
+      svg {
+        path {
+          fill: var(--channel-picker-search-icon-color, currentColor);
+        }
+      }
+    }
+
+    .down-chevron {
+      height: auto;
+      min-width: auto;
+
+      svg {
+        path {
+          fill: var(--channel-picker-down-chevron-color, currentColor);
+        }
+      }
+    }
+
+    .up-chevron {
+      height: auto;
+      min-width: auto;
+
+      svg {
+        path {
+          fill: var(--channel-picker-up-chevron-color, currentColor);
+        }
+      }
+    }
+
+    .close-icon {
+      height: auto;
+      min-width: auto;
+
+      svg {
+        path {
+          fill: var(--channel-picker-close-icon-color, currentColor);
+        }
+      }
+    }
+  }
+
+  fluent-tree-view {
+    min-width: 100%;
+
+    --tree-item-nested-width: 2em;
+  }
+
+  fluent-tree-item {
+    width: 100%;
+
+    --tree-item-nested-width: 2em;
+
+    &:focus-visible {
+      outline: none;
+    }
+
+    &::part(expand-collapse-button) {
+      background: transparent;
+    }
+
+    &::part(content-region),
+    &::part(positioning-region) {
+      color: $dropdown-item-text-color;
+      background: $dropdown-background-color;
+      border: calc(var(--stroke-width) * 2px) solid transparent;
+      height: auto;
+
+      &:hover {
+        background: $dropdown-item-background-color-hover;
+
+        &::part(expand-collapse-button) {
+          background: $dropdown-item-background-color-hover;
+        }
+      }
+    }
+
+    // Handle nexted tree-items
+    fluent-tree-item {
+      &::part(content-region) {
+        height: auto;
+      }
+    }
+  }
+
+  fluent-breadcrumb-item {
+    color: $dropdown-item-selected-text-color;
+
+    .team-parent-name {
+      font-weight: bold;
+    }
+
+    .team-photo {
+      width: 19px;
+      position: inherit;
+      border-radius: 50%;
+    }
+
+    .arrow {
+      margin-left: 8px;
+      margin-right: 8px;
+
+      svg {
+        stroke: $channel-picker-arrow-fill-color;
+      }
     }
   }
 }
@@ -119,22 +223,23 @@
   :host {
     --direction: rtl;
   }
+
   .dropdown {
     text-align: right;
   }
+
   .arrow {
-    -moz-transform: scaleX(-1);
-    -o-transform: scaleX(-1);
-    -webkit-transform: scaleX(-1);
     transform: scaleX(-1);
-    filter: FlipH;
-    -ms-filter: 'FlipH';
-    margin-right: 0px;
+    filter: fliph;
+    filter: 'FlipH';
+    margin-right: 0;
     margin-left: 5px;
   }
+
   .selected-team {
     padding-left: 10px;
   }
+
   .message-parent {
     .loading-text {
       right: auto;
@@ -148,7 +253,7 @@
 @media (forced-colors: active) and (prefers-color-scheme: dark) {
   :host fluent-text-field {
     svg {
-      stroke: rgb(255, 255, 255) !important;
+      stroke: rgb(255 255 255) !important;
     }
   }
 }
@@ -156,7 +261,7 @@
 @media (forced-colors: active) and (prefers-color-scheme: light) {
   :host fluent-text-field {
     svg {
-      stroke: rgb(0, 0, 0) !important;
+      stroke: rgb(0 0 0) !important;
     }
   }
 }

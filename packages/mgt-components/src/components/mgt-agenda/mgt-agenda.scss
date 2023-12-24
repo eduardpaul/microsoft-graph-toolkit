@@ -6,28 +6,27 @@
  */
 
 @import '../../../../../node_modules/office-ui-fabric-core/dist/sass/References';
-@import '../../styles/shared-styles.scss';
-@import './mgt-agenda.theme.scss';
+@import '../../styles/shared-styles';
+@import './mgt-agenda.theme';
 
-$agenda-header-margin: var(--agenda-header-margin, 18px 0px 12px 10px);
+$agenda-header-margin: var(--agenda-header-margin, 18px 0 12px 10px);
 $agenda-header-font-size: var(--agenda-header-font-size, 24px);
 $agenda-event-row-gap: var(--agenda-event-row-gap, 14px);
-$agenda-event-border: var(--agenda-event-border, solid 2px rgba(0, 0, 0, 0));
+$agenda-event-border: var(--agenda-event-border, solid 2px rgb(0 0 0 / 0%));
 $agenda-event-box-shadow: var(--agenda-event-box-shadow, var(--elevation-shadow-card-rest));
 $agenda-event-padding: var(--agenda-event-padding, 12px);
 $agenda-event-time-font-size: var(--agenda-event-time-font-size, 12px);
 $agenda-event-subject-font-size: var(--agenda-event-subject-font-size, 20px);
 $agenda-event-location-font-size: var(--agenda-event-location-font-size, 12px);
 
-:host,
-mgt-agenda {
+:host {
   --card-height: auto;
   --card-width: 99%;
+
   background-color: $agenda-background-color;
 
   .header {
     margin: $agenda-header-margin;
-    font-family: $font-family;
     font-size: $agenda-header-font-size;
     font-style: normal;
     font-weight: 400;
@@ -36,8 +35,8 @@ mgt-agenda {
     opacity: 0.9;
   }
 
-  .agenda,
-  .group {
+  .group,
+  .agenda {
     display: flex;
     flex-direction: column;
     row-gap: $agenda-event-row-gap;
@@ -65,11 +64,10 @@ mgt-agenda {
       &.narrow {
         display: flex;
         flex-direction: column;
-        inset: 0px;
+        inset: 0;
       }
 
       &-time-container {
-        font-family: $font-family;
         font-style: normal;
         font-weight: 600;
         font-size: 12px;
@@ -94,7 +92,7 @@ mgt-agenda {
         flex-direction: column;
         position: relative;
         bottom: 8px;
-        top: 0px;
+        top: 0;
         padding-inline-start: 32px;
 
         &.narrow {
@@ -102,12 +100,11 @@ mgt-agenda {
           left: 6px;
           display: flex;
           flex-direction: column;
-          padding-inline-start: 0px;
+          padding-inline-start: 0;
         }
       }
 
       &-subject {
-        font-family: $font-family;
         font-style: normal;
         font-weight: 400;
         font-size: $agenda-event-subject-font-size;
@@ -125,7 +122,6 @@ mgt-agenda {
         .event {
           &-location {
             padding-inline-start: 3px;
-            font-family: $font-family;
             font-style: normal;
             font-weight: 400;
             font-size: $agenda-event-location-font-size;
@@ -135,11 +131,13 @@ mgt-agenda {
             &-loading {
               width: 90px;
               height: 10px;
-              margin: 2px 0px 0px 4px;
+              margin: 2px 0 0 4px;
             }
           }
+
           &-location-icon {
             display: inline-flex;
+
             svg {
               position: relative;
               top: 2px;
@@ -150,11 +148,13 @@ mgt-agenda {
                 stroke: $agenda-event-location-color;
               }
             }
+
             &-loading {
               width: 14px;
               height: 14px;
             }
           }
+
           &-attendee {
             &-loading {
               width: 20px;
@@ -168,7 +168,7 @@ mgt-agenda {
 
       &-attendees {
         --list-margin: 8px 0 0 0;
-        --avatar-size-s: 20px;
+        --person-avatar-size: 20px;
       }
     }
   }
@@ -182,7 +182,7 @@ fluent-card.event {
   }
 }
 
-:host mgt-people {
+:host .event-attendees {
   --color: $agenda-event-attendees-color;
 }
 
@@ -206,8 +206,7 @@ fluent-card.event {
 }
 
 @media (forced-colors: active) and (prefers-color-scheme: dark) {
-  :host,
-  mgt-agenda {
+  :host {
     .agenda {
       .event {
         &-location-container {
@@ -215,7 +214,7 @@ fluent-card.event {
             &-location-icon {
               svg {
                 path {
-                  stroke: rgb(255, 255, 255) !important;
+                  stroke: rgb(255 255 255) !important;
                 }
               }
             }
@@ -227,8 +226,7 @@ fluent-card.event {
 }
 
 @media (forced-colors: active) and (prefers-color-scheme: light) {
-  :host,
-  mgt-agenda {
+  :host {
     .agenda {
       .event {
         &-location-container {
@@ -236,7 +234,7 @@ fluent-card.event {
             &-location-icon {
               svg {
                 path {
-                  stroke: rgb(0, 0, 0) !important;
+                  stroke: rgb(0 0 0) !important;
                 }
               }
             }

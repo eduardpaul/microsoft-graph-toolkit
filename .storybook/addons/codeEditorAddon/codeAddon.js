@@ -1,4 +1,4 @@
-import addons, { makeDecorator } from '@storybook/addons';
+import { addons, makeDecorator } from '@storybook/preview-api';
 
 import { ProviderState } from '../../../packages/mgt-element/dist/es6/providers/IProvider';
 import { EditorElement } from './editor';
@@ -69,7 +69,11 @@ export const withCodeEditor = makeDecorator({
   parameterName: 'myParameter',
   skipIfNoParametersOrOptions: false,
   wrapper: (getStory, context, { options }) => {
-    const disableThemeToggle = options ? options.disableThemeToggle : false;
+    const forOptions = options ? options.disableThemeToggle : false;
+    const title =
+      ['Custom CSS Properties', 'Theme'].includes(context.name) || context.title.toLowerCase().includes('templating');
+    const forContext = context && title;
+    const disableThemeToggle = forOptions || forContext;
     let story = getStory(context);
 
     let storyHtml;
@@ -114,7 +118,7 @@ export const withCodeEditor = makeDecorator({
             content = await response.text();
           }
         } else {
-          console.warn(`Can't get content from '${url}'`);
+          console.warn(`🦒: Can't get content from '${url}'`);
         }
       }
 
@@ -162,7 +166,7 @@ export const withCodeEditor = makeDecorator({
       ? ''
       : `
       body {
-        background-color: var(--neutral-fill-rest);
+        background-color: var(--fill-color);
         color: var(--neutral-foreground-rest);
         font-family: var(--body-font);
         padding: 0 12px;
@@ -207,6 +211,9 @@ export const withCodeEditor = makeDecorator({
       loadEditorContent();
     });
 
+    const componentRegistration = `
+    `;
+
     const loadEditorContent = () => {
       const storyElement = document.createElement('iframe');
 
@@ -217,7 +224,7 @@ export const withCodeEditor = makeDecorator({
 
           let { html, css, js } = editor.files;
           js = js.replace(
-            /import \{([^\}]+)\}\s+from\s+['"]@microsoft\/mgt['"];/gm,
+            /import \{([^\}]+)\}\s+from\s+['"]@microsoft\/mgt\x2d([^\}]+)['"];/gm,
             `import {$1} from '${mgtScriptName}';`
           );
 
@@ -226,12 +233,13 @@ export const withCodeEditor = makeDecorator({
             <head>
               <script type="module" src="${mgtScriptName}"></script>
               <script type="module">
+                import { registerMgtComponents } from "${mgtScriptName}";
+                registerMgtComponents();
+              </script>
+              <script type="module">
                 ${providerInitCode}
               </script>
               <style>
-                html, body {
-                  height: 100%;
-                }
                 ${themeToggleCss}
                 ${css}
               </style>

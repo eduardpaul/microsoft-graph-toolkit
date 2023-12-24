@@ -7,15 +7,14 @@
 
 import { html } from 'lit';
 import { withCodeEditor } from '../../../.storybook/addons/codeEditorAddon/codeAddon';
-import { defaultDocsPage } from '../../../.storybook/story-elements/defaultDocsPage';
 
 export default {
   title: 'Components / mgt-login',
   component: 'login',
   decorators: [withCodeEditor],
+  tags: ['autodocs'],
   parameters: {
     docs: {
-      page: defaultDocsPage,
       source: { code: '<mgt-login></mgt-login>' }
     }
   }
@@ -35,6 +34,19 @@ export const AvatarLogin = () => html`
 
 export const ShowPresenceLogin = () => html`
   <mgt-login show-presence login-view="full"></mgt-login>
+`;
+
+export const RightAligned = () => html`
+<div class="right">
+    <mgt-login login-view="compact"></mgt-login>
+</div>
+<style>
+.right {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+}
+</style>
 `;
 
 export const Templates = () => html`
@@ -105,7 +117,7 @@ export const Events = () => html`
 export const localization = () => html`
   <mgt-login></mgt-login>
   <script>
-  import { LocalizationHelper } from '@microsoft/mgt';
+  import { LocalizationHelper } from '@microsoft/mgt-element';
   LocalizationHelper.strings = {
     _components: {
       login: {

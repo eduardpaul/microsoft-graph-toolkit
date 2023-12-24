@@ -5,22 +5,51 @@
  * -------------------------------------------------------------------------------------------
  */
 
+@import './shared-sass-variables';
+
+$focus-ring-style: var(--focus-ring-style, auto);
+$font-family: var(
+  --default-font-family,
+  'Segoe UI',
+  'Segoe UI Web (West European)',
+  'Segoe UI',
+  -apple-system,
+  'BlinkMacSystemFont',
+  'Roboto',
+  'Helvetica Neue',
+  sans-serif
+);
+$font-size: var(--default-font-size, 14px);
+
 :host([hidden]) {
   display: none;
 }
 
 :host {
   display: block;
-  --default-font-family: 'Segoe UI', 'Segoe UI Web (West European)', 'Segoe UI', -apple-system, BlinkMacSystemFont,
-    Roboto, 'Helvetica Neue', sans-serif;
-  --default-font-size: 14px;
+  font-family: $font-family;
+  font-size: $font-size;
+
   --theme-primary-color: #0078d7;
   --theme-dark-color: #005a9e;
 }
 
-.ms-Icon {
+:focus-visible {
+  // ensure default is correctly set for Firefox
+  outline-color: var(--focus-ring-color, Highlight);
+
+  // ensure default is set for other browsers
+  /* stylelint-disable-next-line declaration-block-no-duplicate-properties */
+  outline-color: var(--focus-ring-color, -webkit-focus-ring-color);
+
+  // set the style of the focus ring
+  // this needs to be something other than auto in Firefox to use the custom color
+  outline-style: $focus-ring-style;
+}
+
+.ms-icon {
   display: inline-block;
-  font-family: 'FabricMDL2Icons';
+  font-family: $font-icon;
   font-style: normal;
   font-weight: normal;
   font-size: 16px;
@@ -30,27 +59,27 @@
 }
 
 .error {
-  background-color: rgb(253, 231, 233);
+  background-color: rgb(253 231 233);
   padding-block: 8px;
   padding-inline: 8px 12px;
 }
 
-.ms-Icon--ChevronDown::before {
+.ms-icon-chevron-down::before {
   content: '\\\E70D';
 }
 
-.ms-Icon--ChevronUp::before {
+.ms-icon-chevron-up::before {
   content: '\\\E70E';
 }
 
-.ms-Icon--Contact::before {
+.ms-icon-contact::before {
   content: '\\\E77B';
 }
 
-.ms-Icon--AddFriend::before {
+.ms-icon-add-friend::before {
   content: '\\\E8FA';
 }
 
-.ms-Icon--OutlookLogoInverse::before {
+.ms-icon-outlook-logo-inverser::before {
   content: '\\\EB6D';
 }

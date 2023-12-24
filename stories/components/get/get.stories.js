@@ -7,15 +7,14 @@
 
 import { html } from 'lit';
 import { withCodeEditor } from '../../../.storybook/addons/codeEditorAddon/codeAddon';
-import { defaultDocsPage } from '../../../.storybook/story-elements/defaultDocsPage';
 
 export default {
   title: 'Components / mgt-get',
   component: 'get',
   decorators: [withCodeEditor],
+  tags: ['autodocs'],
   parameters: {
     docs: {
-      page: defaultDocsPage,
       source: {
         code: `
 <mgt-get resource="/me/messages" scopes="mail.read">
@@ -89,7 +88,7 @@ export const GetEmail = () => html`
 
     .email mgt-person {
       --font-size: 10px;
-      --avatar-size-s: 12px;
+      --person-avatar-size: 12px;
     }
 
     .email .preview {

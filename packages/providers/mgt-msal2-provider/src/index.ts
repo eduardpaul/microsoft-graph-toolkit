@@ -4,6 +4,5 @@
  * See License in the project root for license information.
  * -------------------------------------------------------------------------------------------
  */
-
-export * from './Msal2Provider';
 export * from './mgt-msal2-provider';
+export * from './exports';

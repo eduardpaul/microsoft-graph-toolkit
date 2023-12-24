@@ -78,6 +78,18 @@ export abstract class MgtBaseProvider extends MgtBaseComponent {
   })
   public baseUrl: GraphEndpoint;
 
+  /**
+   * Custom Hosts to be passed through to the graph client
+   *
+   * @memberof MgtBaseProvider
+   */
+  @property({
+    attribute: 'custom-hosts',
+    type: String,
+    converter: newValue => newValue.split(',').map(s => s.trim())
+  })
+  public customHosts?: string[];
+
   private _provider: IProvider;
 
   /**
@@ -89,7 +101,7 @@ export abstract class MgtBaseProvider extends MgtBaseComponent {
    *
    * * @param _changedProperties Map of changed properties with old values
    */
-  protected firstUpdated(changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>) {
+  protected firstUpdated(changedProperties: PropertyValueMap<unknown> | Map<PropertyKey, unknown>) {
     super.firstUpdated(changedProperties);
 
     let higherPriority = false;
@@ -119,7 +131,7 @@ export abstract class MgtBaseProvider extends MgtBaseComponent {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   protected initializeProvider() {}
 
-  private stateChangedHandler = () => {
+  private readonly stateChangedHandler = () => {
     this.fireCustomEvent('onStateChanged', this.provider.state);
   };
 }

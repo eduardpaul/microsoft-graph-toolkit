@@ -6,21 +6,15 @@
  */
 
 import { CSSResult, html, TemplateResult } from 'lit';
-import { property } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
-import {
-  Providers,
-  ProviderState,
-  MgtTemplatedComponent,
-  IProviderAccount,
-  mgtHtml,
-  customElement
-} from '@microsoft/mgt-element';
+import { ifDefined } from 'lit/directives/if-defined.js';
+import { Providers, ProviderState, MgtTemplatedComponent, IProviderAccount, mgtHtml } from '@microsoft/mgt-element';
 
 import { AvatarSize, IDynamicPerson, ViewType } from '../../graph/types';
-import { MgtFlyout } from '../sub-components/mgt-flyout/mgt-flyout';
+import { MgtFlyout, registerMgtFlyoutComponent } from '../sub-components/mgt-flyout/mgt-flyout';
 import { getUserWithPhoto } from '../../graph/graph.userWithPhoto';
-import { MgtPerson } from '../mgt-person/mgt-person';
+import { MgtPerson, registerMgtPersonComponent } from '../mgt-person/mgt-person';
 import { PersonViewType } from '../mgt-person/mgt-person-types';
 
 import { getSvg, SvgIcon } from '../../utils/SvgHelper';
@@ -32,7 +26,7 @@ import '../../styles/style-helper';
 
 import { fluentListbox, fluentProgressRing, fluentButton, fluentCard } from '@fluentui/web-components';
 import { registerFluentComponents } from '../../utils/FluentComponents';
-registerFluentComponents(fluentListbox, fluentProgressRing, fluentButton, fluentCard);
+import { registerComponent } from '@microsoft/mgt-element';
 
 /**
  * loginViewType describes the enum strings that can be passed in to determine
@@ -40,12 +34,17 @@ registerFluentComponents(fluentListbox, fluentProgressRing, fluentButton, fluent
  */
 export type LoginViewType = 'avatar' | 'compact' | 'full';
 
-// eslint-disable-next-line @typescript-eslint/tslint/config
-type PersonViewConfig = {
-  // eslint-disable-next-line @typescript-eslint/tslint/config
+interface PersonViewConfig {
   view: ViewType;
-  // eslint-disable-next-line @typescript-eslint/tslint/config
   avatarSize: AvatarSize;
+}
+
+export const registerMgtLoginComponent = () => {
+  registerFluentComponents(fluentListbox, fluentProgressRing, fluentButton, fluentCard);
+
+  registerMgtFlyoutComponent();
+  registerMgtPersonComponent();
+  registerComponent('login', MgtLogin);
 };
 
 /**
@@ -73,7 +72,6 @@ type PersonViewConfig = {
  * @cssprop --login-signed-out-button-text-color - {Color} the background color of the component when signed out.
  * @cssprop --login-button-padding - {Length} the padding of the button. Default is 0px.
  * @cssprop --login-popup-background-color - {Color} the background color of the popup.
- * @cssprop --login-popup-text-color - {Color} the color of the text in the popup.
  * @cssprop --login-popup-command-button-background-color - {Color} the color of the background to the popup command button.
  * @cssprop --login-popup-padding - {Length} the padding applied to the popup card. Default is 16px.
  * @cssprop --login-add-account-button-text-color - {Color} the color for the text and icon of the add account button.
@@ -82,8 +80,10 @@ type PersonViewConfig = {
  * @cssprop --login-command-button-text-color - {Color} the color for the text of the command button.
  * @cssprop --login-command-button-background-color - {Color} the color for the background of the command button.
  * @cssprop --login-command-button-hover-background-color - {Color} the color for the background of the command button on hovering.
+ * @cssprop --login-account-item-hover-bg-color - {Color} the background color of the account item on hover.
+ * @cssprop --login-flyout-command-text-color - {Color} the color for the text of the flyout command button.
+ * @cssprop --login-person-avatar-size - {Length} the size of the avatar in the person component. Default is 40px.
  */
-@customElement('login')
 export class MgtLogin extends MgtTemplatedComponent {
   /**
    * Array of styles to apply to the element. The styles should be defined
@@ -166,7 +166,7 @@ export class MgtLogin extends MgtTemplatedComponent {
    * @private
    * @type {boolean}
    */
-  @property({ attribute: false }) private _isFlyoutOpen: boolean;
+  @state() private _isFlyoutOpen: boolean;
 
   /**
    * The image blob string
@@ -184,7 +184,11 @@ export class MgtLogin extends MgtTemplatedComponent {
    * @type {string}
    * @memberof MgtLogin
    */
-  private _userDetailsKey = '-userDetails';
+  private get _userDetailsKey() {
+    return '-userDetails';
+  }
+
+  @state() private _arrowKeyLocation = -1;
 
   constructor() {
     super();
@@ -212,7 +216,7 @@ export class MgtLogin extends MgtTemplatedComponent {
     if (!provider.isMultiAccountSupportedAndEnabled && (this.userDetails || !this.fireCustomEvent('loginInitiated'))) {
       return;
     }
-    if (provider && provider.login) {
+    if (provider?.login) {
       await provider.login();
 
       if (provider.state === ProviderState.SignedIn) {
@@ -235,10 +239,10 @@ export class MgtLogin extends MgtTemplatedComponent {
     }
 
     const provider = Providers.globalProvider;
-    if (provider && provider.isMultiAccountSupportedAndEnabled) {
+    if (provider?.isMultiAccountSupportedAndEnabled) {
       localStorage.removeItem(provider.getActiveAccount().id + this._userDetailsKey);
     }
-    if (provider && provider.logout) {
+    if (provider?.logout) {
       await provider.logout();
       this.userDetails = null;
       if (provider.isMultiAccountSupportedAndEnabled) {
@@ -295,12 +299,6 @@ export class MgtLogin extends MgtTemplatedComponent {
     }
   }
 
-  private buildAriaLabel(isSignedIn: boolean, defaultLabel: string): string {
-    if (!isSignedIn) return defaultLabel;
-
-    return (defaultLabel = this.userDetails ? this.userDetails.displayName : this.strings.signInLinkSubtitle);
-  }
-
   /**
    * Render the sign in or sign out button.
    *
@@ -310,22 +308,23 @@ export class MgtLogin extends MgtTemplatedComponent {
    */
   protected renderButton(): TemplateResult {
     const isSignedIn = Providers.globalProvider?.state === ProviderState.SignedIn;
-    const ariaLabel = this.buildAriaLabel(isSignedIn, this.strings.signInLinkSubtitle);
     const loginClasses = classMap({
       'signed-in': isSignedIn && Boolean(this.userDetails),
       'signed-out': !isSignedIn,
       small: this.loginView === 'avatar'
     });
     const appearance = isSignedIn ? 'stealth' : 'neutral';
-    const buttonContentTemplate =
-      isSignedIn && this.userDetails
-        ? this.renderSignedInButtonContent(this.userDetails, this._image)
-        : this.renderSignedOutButtonContent();
-
+    const showSignedInState = isSignedIn && this.userDetails;
+    const buttonContentTemplate = showSignedInState
+      ? this.renderSignedInButtonContent(this.userDetails, this._image)
+      : this.renderSignedOutButtonContent();
+    const expandedState: boolean | undefined = showSignedInState ? this._isFlyoutOpen : undefined;
     return html`
       <fluent-button
+        id="login-button"
+        aria-expanded="${ifDefined(expandedState)}"
         appearance=${appearance}
-        aria-label=${ariaLabel}
+        aria-label="${ifDefined(isSignedIn ? undefined : this.strings.signInLinkSubtitle)}"
         ?disabled=${this.isLoadingState}
         @click=${this.onClick}
         class=${loginClasses}>
@@ -333,10 +332,10 @@ export class MgtLogin extends MgtTemplatedComponent {
       </fluent-button>`;
   }
 
-  private flyoutOpened = () => {
+  private readonly flyoutOpened = () => {
     this._isFlyoutOpen = true;
   };
-  private flyoutClosed = () => {
+  private readonly flyoutClosed = () => {
     this._isFlyoutOpen = false;
   };
 
@@ -354,13 +353,48 @@ export class MgtLogin extends MgtTemplatedComponent {
         light-dismiss
         @opened=${this.flyoutOpened}
         @closed=${this.flyoutClosed}>
-        <div slot="flyout">
-          <fluent-card class="flyout-card">
-            ${this.renderFlyoutContent()}
-          </fluent-card>
-        </div>
+        <fluent-card 
+          slot="flyout" 
+          tabindex="0" 
+          class="flyout-card"
+          @keydown=${this.onUserKeyDown}
+          >
+          ${this.renderFlyoutContent()}
+        </fluent-card>
       </mgt-flyout>`;
   }
+
+  /**
+   * Tracks tabbing through the flyout (keydown)
+   */
+  private readonly onUserKeyDown = (e: KeyboardEvent): void => {
+    if (!this.flyout.isOpen) {
+      return;
+    }
+
+    const el = this.renderRoot.querySelector('.popup-content');
+    const focusableEls = el.querySelectorAll('ul, fluent-button');
+    const firstFocusableEl = el.querySelector('#signout-button') || focusableEls[0];
+    const lastFocusableEl =
+      el.querySelector('#signin-different-account-button') || focusableEls[focusableEls.length - 1];
+
+    if (e.key === 'Tab' && e.shiftKey && firstFocusableEl === e.target) {
+      e.preventDefault();
+      (lastFocusableEl as HTMLElement)?.focus();
+    }
+    if (e.key === 'Tab' && !e.shiftKey && lastFocusableEl === e.target) {
+      e.preventDefault();
+      (firstFocusableEl as HTMLElement)?.focus();
+    }
+    if (e.key === 'Escape') {
+      const loginButton = this.renderRoot.querySelector('#login-button');
+      (loginButton as HTMLElement)?.focus();
+    }
+    const fluentCardEl = this.renderRoot.querySelector('fluent-card');
+    if (e.shiftKey && e.key === 'Tab' && e.target === fluentCardEl) {
+      this.hideFlyout();
+    }
+  };
 
   /**
    * Render the flyout menu content.
@@ -438,6 +472,7 @@ export class MgtLogin extends MgtTemplatedComponent {
       template ||
       html`
         <fluent-button
+          id="signout-button"
           appearance="stealth"
           size="medium"
           class="flyout-command"
@@ -475,6 +510,7 @@ export class MgtLogin extends MgtTemplatedComponent {
       return html`
         <div class="add-account">
           <fluent-button
+            id="signin-different-account-button"
             appearance="stealth"
             aria-label="${this.strings.signInWithADifferentAccount}"
             @click=${() => void this.login()}>
@@ -526,7 +562,7 @@ export class MgtLogin extends MgtTemplatedComponent {
           .avatarSize=${displayConfig.avatarSize}
           line2-property="email"
           class="signed-in-person"
-        ></mgt-person`
+        ></mgt-person>`
     );
   }
 
@@ -546,33 +582,76 @@ export class MgtLogin extends MgtTemplatedComponent {
 
       if (accounts?.length > 1) {
         return html`
-         <div id="accounts">
-             <fluent-listbox class="accounts" name="Account list">
-              ${accounts.map(account => {
-                if (account.id !== provider.getActiveAccount().id) {
+          <div id="accounts">
+            <ul
+              tabindex="0"
+              class="account-list"
+              part="account-list"
+              aria-label="${this.ariaLabel}"
+              @keydown=${this.handleAccountListKeyDown}
+            >
+              ${accounts
+                .filter(a => a.id !== provider.getActiveAccount().id)
+                .map(account => {
                   const details = localStorage.getItem(account.id + this._userDetailsKey);
                   return mgtHtml`
-                    <fluent-option class="account-option" value="${account.name}" role="option">
+                    <li
+                      tabindex="-1"
+                      part="account-item"
+                      class="account-item"
+                      @click=${() => this.setActiveAccount(account)}
+                      @keyup=${(e: KeyboardEvent) => {
+                        if (e.key === 'Enter') this.setActiveAccount(account);
+                      }}
+                    >
                       <mgt-person
-                        @click=${() => this.setActiveAccount(account)}
-                        @keyup=${(e: KeyboardEvent) => {
-                          if (e.key === 'Enter') {
-                            this.setActiveAccount(account);
-                          }
-                        }}
                         .personDetails=${details ? JSON.parse(details) : null}
                         .fallbackDetails=${{ displayName: account.name, mail: account.mail }}
                         .view=${PersonViewType.twolines}
-                        class="account"/>
-                    </fluent-option>`;
-                }
-              })}
-             </fluent-listbox>
-         </div>
+                        class="account"
+                      ></mgt-person>
+                    </li>`;
+                })}
+            </ul>
+          </div>
        `;
       }
     }
   }
+
+  private readonly handleAccountListKeyDown = (event: KeyboardEvent) => {
+    const list: HTMLUListElement = this.renderRoot.querySelector('ul.account-list');
+    let item: HTMLLIElement;
+    const listItems: HTMLCollection = list?.children;
+    // Default all tabindex values in li nodes to -1
+    for (const element of listItems) {
+      const el = element as HTMLLIElement;
+      el.setAttribute('tabindex', '-1');
+      el.blur();
+    }
+
+    const childElementCount = list.childElementCount;
+    const keyName = event.key;
+    if (keyName === 'ArrowDown') {
+      this._arrowKeyLocation = (this._arrowKeyLocation + 1 + childElementCount) % childElementCount;
+    } else if (keyName === 'ArrowUp') {
+      this._arrowKeyLocation = (this._arrowKeyLocation - 1 + childElementCount) % childElementCount;
+    } else if (keyName === 'Tab' || keyName === 'Escape') {
+      this._arrowKeyLocation = -1;
+      list.blur();
+      if (keyName === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      return;
+    }
+
+    if (this._arrowKeyLocation > -1) {
+      item = listItems[this._arrowKeyLocation] as HTMLLIElement;
+      item.setAttribute('tabindex', '1');
+      item.focus();
+    }
+  };
 
   /**
    * Set one of the non-active accounts as the active account
@@ -643,7 +722,7 @@ export class MgtLogin extends MgtTemplatedComponent {
    * @private
    * @memberof MgtLogin
    */
-  private onClick = (): void => {
+  private readonly onClick = (): void => {
     if (this.userDetails && this._isFlyoutOpen) {
       this.hideFlyout();
     } else if (this.userDetails) {

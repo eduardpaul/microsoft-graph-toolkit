@@ -1,6 +1,6 @@
 {
   "name": "@microsoft/mgt-spfx-utils",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Helper utilities for loading MGT based libraries and web parts in a SPFx context",
   "main": "./dist/es6/index.js",
   "types": "./dist/es6/index.d.ts",
@@ -25,6 +25,7 @@
     "lint": "eslint -c ../../.eslintrc.js 'src/**/*.ts'",
     "postpack": "cpx *.tgz ../../artifacts"
   },
+  "sideEffects": false,
   "homepage": "https://github.com/microsoftgraph/microsoft-graph-toolkit",
   "bugs": {
     "url": "https://github.com/microsoftgraph/microsoft-graph-toolkit/issues"
@@ -37,10 +38,9 @@
   "license": "MIT",
   "dependencies": {
     "@microsoft/mgt-components": "*",
-    "@types/react": "^17.0.00",
+    "@types/react": "^17.0.0",
     "react": "^17.0.1"
   },
-  "devDependencies": {},
   "resolutions": {
     "react": "16.13.1"
   },

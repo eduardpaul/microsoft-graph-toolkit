@@ -41,7 +41,7 @@ export class Mgt extends Wc {
 
     if (this._templates) {
       for (const t in this._templates) {
-        if (this._templates.hasOwnProperty(t)) {
+        if (Object.prototype.hasOwnProperty.call(this._templates, t)) {
           const element = React.createElement('template', { key: t, 'data-type': t }, null);
           templateElements.push(element);
         }
@@ -145,9 +145,12 @@ export class Mgt extends Wc {
  * @param {(string | Function)} tag
  * @returns React component
  */
-export const wrapMgt = <T = WcProps>(tag: string) => {
+export const wrapMgt = <T = WcProps>(tag: string, registerElementFunction: () => void) => {
+  registerElementFunction();
+  const WrapMgt = (props: T, ref: React.ForwardedRef<unknown>): React.CElement<WcTypeProps, Mgt> =>
+    React.createElement(Mgt, { wcType: tag, innerRef: ref, ...props });
   const component: React.ForwardRefExoticComponent<
-    React.PropsWithoutRef<T & React.HTMLAttributes<any>> & React.RefAttributes<unknown>
-  > = React.forwardRef((props: T, ref) => React.createElement(Mgt, { wcType: tag, innerRef: ref, ...props }));
+    React.PropsWithoutRef<T & React.HTMLAttributes<unknown>> & React.RefAttributes<unknown>
+  > = React.forwardRef(WrapMgt);
   return component;
 };

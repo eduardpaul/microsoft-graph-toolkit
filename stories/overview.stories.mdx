@@ -1,6 +1,7 @@
 import { Meta, Source } from '@storybook/addon-docs';
-import { PACKAGE_VERSION } from '@microsoft/mgt';
+import { PACKAGE_VERSION } from '@microsoft/mgt-element';
 import { versionInfo } from '../.storybook/versionInfo';
+import { TableNamer, CopyButtonNamer } from '../.storybook/components/ElementNamer';
 
 <Meta title="Overview" />
 
@@ -8,7 +9,7 @@ import { versionInfo } from '../.storybook/versionInfo';
 
 The Microsoft Graph Toolkit is a collection of reusable, framework-agnostic components and authentication providers for accessing and working with Microsoft Graph. The components are fully functional right of out of the box, with built in providers that authenticate with and fetch data from Microsoft Graph.
 
-<img src="graff.png" class="docs-img-centered" alt="graph logo" width="15%"/>
+<img src="graff.png" className="docs-img-centered" alt="graph logo" width="15%"/>
 
 The Microsoft Graph Toolkit makes it easy to use Microsoft Graph in your application. In the following example, a signed in user and their calendar events are displayed with just two lines of code by using the [Login](?path=/story/components-mgt-login--login) and [Agenda](?path=/story/components-mgt-agenda--simple) components.
 
@@ -54,24 +55,30 @@ The components are also available as [React components](https://learn.microsoft.
 | [Get](?path=/story/components-mgt-get--get-email)                                              | Make a GET query to any Microsoft Graph API directly in your HTML.                                                                               |
 | [Teams Channel picker](?path=/story/components-mgt-teams-channel-picker--teams-channel-picker) | Provides the ability to search for Microsoft Teams channels to select a channel from a rendered list of results.                                 |
 | [Theme toggle](?path=/story/components-mgt-theme-toggle--user-preference-driven)               | Provides the ability to toggle between light and dark themes.                                                                                    |
-| [To Do](?path=/story/components-mgt-todo--tasks)                                               | Displays and enables adding, removing, completing, or editing of tasks from Microsoft To Do.                                                     |
+| [To Do](?path=/story/components-mgt-todo--todos)                                               | Displays and enables adding, removing, completing, or editing of tasks from Microsoft To Do.                                                     |
 | [Tasks](?path=/story/components-mgt-tasks--tasks)                                              | Displays and enables adding, removing, completing, or editing of tasks from Microsoft Planner or Microsoft To Do.                                |
+
+##### Preview components
+
+Additionaly the following components are available as preview components. These components are not yet ready for production use and are subject to change.
+
+| Preview Component                                                        | Description                                                             |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| [Search Box](?path=/story/preview-mgt-search-box--search-box)            | An input box for search scenarios.                                      |
+| [Seach Results](?path=/story/preview-mgt-search-results--search-results) | A component for executing search queries and displaying search results. |
 
 #### Providers
 
 [Providers](https://learn.microsoft.com/graph/toolkit/providers/providers) enable authentication and provide the implementation for acquiring access tokens on various platforms and expose a Microsoft Graph client for calling the Microsoft Graph APIs. The components work best when used with a provider, but the providers can be used on their own.
 
-| Providers                                                                      | Description                                                                                                                                |
-| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| [MSAL](https://learn.microsoft.com/graph/toolkit/providers/msal)               | Uses msal.js to sign in users and acquire tokens to use with Microsoft Graph.                                                              |
-| [MSAL2](https://learn.microsoft.com/graph/toolkit/providers/msal2)             | Uses msal-browser to sign in users and acquire tokens to use with Microsoft Graph.                                                         |
-| [SharePoint](https://learn.microsoft.com/graph/toolkit/providers/sharepoint)   | Authenticates and provides Microsoft Graph access to components inside of SharePoint web parts.                                            |
-| [Teams](https://learn.microsoft.com/graph/toolkit/providers/teams)             | Uses msal.js to sign in users and acquire tokens on the client in Microsoft Teams tabs.                                                    |
-| [Teams MSAL2](https://learn.microsoft.com/graph/toolkit/providers/teams-msal2) | Uses msal-browser to sign in users and acquire tokens in Microsoft Teams tabs. Supports Single Sign-On with custom backend.                |
-| [TeamsFx](https://learn.microsoft.com/graph/toolkit/providers/teamsfx)         | Use the TeamsFx provider inside your Microsoft Teams applications to provide Microsoft Graph Toolkit components access to Microsoft Graph. |
-| [Electron](https://learn.microsoft.com/graph/toolkit/providers/electron)       | Authenticates and provides Microsoft Graph access to components inside of Electron apps                                                    |
-| [Proxy](https://learn.microsoft.com/graph/toolkit/providers/proxy)             | Allows the use of backend authentication by routing all calls to Microsoft Graph through your backend.                                     |
-| [Custom](https://learn.microsoft.com/graph/toolkit/providers/custom)           | Create a custom provider to enable authentication and access to Microsoft Graph with your application's existing authentication code.      |
+| Providers                                                                    | Description                                                                                                                                |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| [MSAL2](https://learn.microsoft.com/graph/toolkit/providers/msal2)           | Uses msal-browser to sign in users and acquire tokens to use with Microsoft Graph.                                                         |
+| [SharePoint](https://learn.microsoft.com/graph/toolkit/providers/sharepoint) | Authenticates and provides Microsoft Graph access to components inside of SharePoint web parts.                                            |
+| [TeamsFx](https://learn.microsoft.com/graph/toolkit/providers/teamsfx)       | Use the TeamsFx provider inside your Microsoft Teams applications to provide Microsoft Graph Toolkit components access to Microsoft Graph. |
+| [Electron](https://learn.microsoft.com/graph/toolkit/providers/electron)     | Authenticates and provides Microsoft Graph access to components inside of Electron apps                                                    |
+| [Proxy](https://learn.microsoft.com/graph/toolkit/providers/proxy)           | Allows the use of backend authentication by routing all calls to Microsoft Graph through your backend.                                     |
+| [Custom](https://learn.microsoft.com/graph/toolkit/providers/custom)         | Create a custom provider to enable authentication and access to Microsoft Graph with your application's existing authentication code.      |
 
 ### Who should use it?
 
@@ -96,3 +103,6 @@ The Microsoft Graph Toolkit is supported in the following browsers.
 - Read our [documentation](https://aka.ms/mgt/docs).
 - [Get started](https://learn.microsoft.com/graph/toolkit/get-started/overview) with the Microsoft Graph Toolkit.
 - Check out the Microsoft Graph Toolkit on [GitHub](https://aka.ms/mgt).
+
+<TableNamer names={['Microsoft Graph Toolkit Components', 'Components in preview', 'Microsoft Graph Toolkit Providers', 'Supported browsers']}/>
+<CopyButtonNamer names={['Copy mgt-loader script tag', 'Copy npm install command']}/>

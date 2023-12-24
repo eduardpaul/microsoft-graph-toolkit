@@ -8,14 +8,9 @@
 import { Providers } from '../providers/Providers';
 import { ProviderState } from '../providers/IProvider';
 import { CacheStore } from './CacheStore';
-
-/**
- * Localstorage key for storing names of cache databases
- *
- * @type {string}
- *
- */
-export const dbListKey = 'mgt-db-list';
+import { CacheSchema } from './CacheSchema';
+import { CacheItem } from './CacheItem';
+import { dbListKey } from './dbListKey';
 
 /**
  * Holds the cache options for cache store
@@ -159,13 +154,23 @@ export class CacheService {
    * @param {string} id
    * @memberof CacheService
    */
-  public static clearCacheById(id: string) {
+  public static clearCacheById(id: string): Promise<unknown> {
+    const work: Promise<void>[] = [];
     const oldDbArray: string[] = JSON.parse(localStorage.getItem(dbListKey)) as string[];
     if (oldDbArray) {
       const newDbArray: string[] = [];
       oldDbArray.forEach(x => {
         if (x.includes(id)) {
-          indexedDB.deleteDatabase(x);
+          work.push(
+            new Promise<void>((resolve, reject) => {
+              const delReq = indexedDB.deleteDatabase(x);
+              delReq.onsuccess = () => resolve();
+              delReq.onerror = () => {
+                console.error(`🦒: ${delReq.error.name} occurred deleting cache: ${x}`, delReq.error.message);
+                reject();
+              };
+            })
+          );
         } else {
           newDbArray.push(x);
         }
@@ -176,12 +181,13 @@ export class CacheService {
         localStorage.removeItem(dbListKey);
       }
     }
+    return Promise.all(work);
   }
 
-  private static cacheStore: Map<string, CacheStore<CacheItem>> = new Map();
+  private static readonly cacheStore = new Map<string, CacheStore<CacheItem>>();
   private static isInitialized = false;
 
-  private static cacheConfig: CacheConfig = {
+  private static readonly cacheConfig: CacheConfig = {
     defaultInvalidationPeriod: 3600000,
     groups: {
       invalidationPeriod: null,
@@ -249,57 +255,11 @@ export class CacheService {
       if (previousState === ProviderState.SignedIn && Providers.globalProvider.state === ProviderState.SignedOut) {
         const id = await Providers.getCacheId();
         if (id !== null) {
-          this.clearCacheById(id);
+          await this.clearCacheById(id);
         }
       }
       previousState = Providers.globalProvider.state;
     });
     this.isInitialized = true;
   }
-}
-
-/**
- * Represents organization for a cache
- *
- * @export
- * @interface CacheSchema
- */
-export interface CacheSchema {
-  /**
-   * version number of cache, useful for upgrading
-   *
-   * @type {number}
-   * @memberof CacheSchema
-   */
-  version: number;
-  /**
-   * name of the cache
-   *
-   * @type {string}
-   * @memberof CacheSchema
-   */
-  name: string;
-  /**
-   * list of stores in the cache
-   *
-   * @type {{ [name: string]: CacheSchemaStore }}
-   * @memberof CacheSchema
-   */
-  stores: { [name: string]: string };
-}
-
-/**
- * item that is stored in cache
- *
- * @export
- * @interface CacheItem
- */
-export interface CacheItem {
-  /**
-   * date and time that item was retrieved from api/stored in cache
-   *
-   * @type {number}
-   * @memberof CacheItem
-   */
-  timeCached?: number;
 }

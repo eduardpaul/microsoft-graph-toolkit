@@ -11,10 +11,7 @@ import { ComponentMediaQuery, Providers, ProviderState, MgtTemplatedComponent } 
 import { strings } from './strings';
 import { registerFluentComponents } from '../../utils/FluentComponents';
 import { fluentTextField, fluentButton, fluentCalendar } from '@fluentui/web-components';
-import { TodoTask } from '../mgt-todo/graph.todo';
-
-registerFluentComponents(fluentTextField, fluentButton, fluentCalendar);
-
+import { TodoTask } from '@microsoft/microsoft-graph-types';
 /**
  * The foundation for creating task based components.
  *
@@ -35,7 +32,7 @@ export abstract class MgtTasksBase extends MgtTemplatedComponent {
    * sets whether the header is rendered
    *
    * @type {boolean}
-   * @memberof MgtTasks
+   * @memberof MgtTasksBase
    */
   @property({ attribute: 'hide-header', type: Boolean })
   public hideHeader: boolean;
@@ -44,7 +41,7 @@ export abstract class MgtTasksBase extends MgtTemplatedComponent {
    * sets whether the options are rendered
    *
    * @type {boolean}
-   * @memberof MgtTasks
+   * @memberof MgtTasksBase
    */
   @property({ attribute: 'hide-options', type: Boolean })
   public hideOptions: boolean;
@@ -68,12 +65,14 @@ export abstract class MgtTasksBase extends MgtTemplatedComponent {
 
   private _previousMediaQuery: ComponentMediaQuery;
 
-  protected get strings(): { [x: string]: string } {
+  protected get strings(): Record<string, string> {
     return strings;
   }
 
   constructor() {
     super();
+
+    registerFluentComponents(fluentTextField, fluentButton, fluentCalendar);
 
     this.clearState();
     this._previousMediaQuery = this.mediaQuery;
@@ -85,7 +84,7 @@ export abstract class MgtTasksBase extends MgtTemplatedComponent {
    * @param {*} name
    * @param {*} oldValue
    * @param {*} newValue
-   * @memberof MgtTasks
+   * @memberof MgtTasksBase
    */
   public attributeChangedCallback(name: string, oldVal: string, newVal: string) {
     super.attributeChangedCallback(name, oldVal, newVal);
@@ -101,7 +100,7 @@ export abstract class MgtTasksBase extends MgtTemplatedComponent {
   /**
    * updates provider state
    *
-   * @memberof MgtTasks
+   * @memberof MgtTasksBase
    */
   public connectedCallback() {
     super.connectedCallback();
@@ -111,7 +110,7 @@ export abstract class MgtTasksBase extends MgtTemplatedComponent {
   /**
    * removes updates on provider state
    *
-   * @memberof MgtTasks
+   * @memberof MgtTasksBase
    */
   public disconnectedCallback() {
     window.removeEventListener('resize', this.onResize);
@@ -140,7 +139,7 @@ export abstract class MgtTasksBase extends MgtTemplatedComponent {
     return html`
       ${picker}
       ${newTaskTemplate}
-      <div class="Tasks" dir=${this.direction}>
+      <div class="tasks" dir=${this.direction}>
         ${tasksTemplate}
       </div>
     `;
@@ -155,11 +154,11 @@ export abstract class MgtTasksBase extends MgtTemplatedComponent {
    */
   protected renderLoadingTask() {
     return html`
-      <div class="Task LoadingTask">
-        <div class="TaskDetails">
-          <div class="Title"></div>
-          <div class="TaskDue"></div>
-          <div class="TaskDelete"></div>
+      <div class="task loading-task">
+        <div class="task-details">
+          <div class="title"></div>
+          <div class="task-due"></div>
+          <div class="task-delete"></div>
         </div>
       </div>
     `;
@@ -172,14 +171,6 @@ export abstract class MgtTasksBase extends MgtTemplatedComponent {
    * @memberof MgtTasksBase
    */
   protected abstract renderNewTask(): TemplateResult;
-
-  /**
-   * Render the generic picker.
-   *
-   * @protected
-   * @memberof MgtTasksBase
-   */
-  protected abstract renderPicker(): TemplateResult;
 
   /**
    * Render the generic picker.
@@ -255,7 +246,7 @@ export abstract class MgtTasksBase extends MgtTemplatedComponent {
     return null;
   }
 
-  private onResize = () => {
+  private readonly onResize = () => {
     if (this.mediaQuery !== this._previousMediaQuery) {
       this._previousMediaQuery = this.mediaQuery;
       this.requestUpdate();

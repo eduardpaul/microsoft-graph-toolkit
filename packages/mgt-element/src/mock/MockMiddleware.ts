@@ -1,3 +1,10 @@
+/**
+ * -------------------------------------------------------------------------------------------
+ * Copyright (c) Microsoft Corporation.  All Rights Reserved.  Licensed under the MIT License.
+ * See License in the project root for license information.
+ * -------------------------------------------------------------------------------------------
+ */
+
 import { Context, Middleware } from '@microsoft/microsoft-graph-client';
 import { SessionCache, storageAvailable } from '../utils/SessionCache';
 
@@ -25,7 +32,6 @@ export class MockMiddleware implements Middleware {
     return this._cache;
   }
 
-  // eslint-disable-next-line @typescript-eslint/tslint/config
   public async execute(context: Context): Promise<void> {
     try {
       const baseUrl = await MockMiddleware.getBaseUrl();

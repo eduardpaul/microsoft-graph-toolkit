@@ -5,13 +5,21 @@
  * -------------------------------------------------------------------------------------------
  */
 
-import { EducationalActivity, PersonAnnualEvent, PersonInterest, Profile } from '@microsoft/microsoft-graph-types-beta';
-import { html, TemplateResult } from 'lit';
+import {
+  EducationalActivity,
+  PersonAnnualEvent,
+  PersonInterest,
+  PhysicalAddress,
+  Profile
+} from '@microsoft/microsoft-graph-types-beta';
+import { html, TemplateResult, nothing } from 'lit';
 import { BasePersonCardSection } from '../BasePersonCardSection';
 import { getSvg, SvgIcon } from '../../utils/SvgHelper';
 import { styles } from './mgt-profile-css';
 import { strings } from './strings';
-import { customElement } from '@microsoft/mgt-element';
+import { registerComponent } from '@microsoft/mgt-element';
+
+export const registerMgtProfileComponent = () => registerComponent('profile', MgtProfile);
 
 /**
  * The user profile subsection of the person card
@@ -22,7 +30,6 @@ import { customElement } from '@microsoft/mgt-element';
  *
  * @cssprop --token-overflow-color - {Color} Color of the text showing more undisplayed values i.e. +3 more
  */
-@customElement('profile')
 export class MgtProfile extends BasePersonCardSection {
   /**
    * Array of styles to apply to the element. The styles should be defined
@@ -76,12 +83,12 @@ export class MgtProfile extends BasePersonCardSection {
     return (
       [
         this._birthdayAnniversary,
-        this._personalInterests && this._personalInterests.length,
-        this._professionalInterests && this._professionalInterests.length,
-        languages && languages.length,
-        skills && skills.length,
-        positions && positions.length,
-        educationalActivities && educationalActivities.length
+        this._personalInterests?.length,
+        this._professionalInterests?.length,
+        languages?.length,
+        skills?.length,
+        positions?.length,
+        educationalActivities?.length
       ].filter(v => !!v).length > 0
     );
   }
@@ -102,10 +109,9 @@ export class MgtProfile extends BasePersonCardSection {
     }
 
     this._profile = value;
-    this._birthdayAnniversary =
-      value && value.anniversaries ? value.anniversaries.find(this.isBirthdayAnniversary) : null;
-    this._personalInterests = value && value.interests ? value.interests.filter(this.isPersonalInterest) : null;
-    this._professionalInterests = value && value.interests ? value.interests.filter(this.isProfessionalInterest) : null;
+    this._birthdayAnniversary = value?.anniversaries ? value.anniversaries.find(this.isBirthdayAnniversary) : null;
+    this._personalInterests = value?.interests ? value.interests.filter(this.isPersonalInterest) : null;
+    this._professionalInterests = value?.interests ? value.interests.filter(this.isProfessionalInterest) : null;
   }
 
   private _profile: Profile;
@@ -203,14 +209,14 @@ export class MgtProfile extends BasePersonCardSection {
    */
   protected renderLanguages(): TemplateResult {
     const { languages } = this._profile;
-    if (!(languages && languages.length)) {
+    if (!languages?.length) {
       return null;
     }
 
     const languageItems: TemplateResult[] = [];
     for (const language of languages) {
       let proficiency = null;
-      if (language.proficiency && language.proficiency.length) {
+      if (language.proficiency?.length) {
         proficiency = html`
            <span class="language__proficiency" tabindex="0">
              &nbsp;(${language.proficiency})
@@ -250,7 +256,7 @@ export class MgtProfile extends BasePersonCardSection {
   protected renderSkills(): TemplateResult {
     const { skills } = this._profile;
 
-    if (!(skills && skills.length)) {
+    if (!skills?.length) {
       return null;
     }
 
@@ -287,7 +293,7 @@ export class MgtProfile extends BasePersonCardSection {
   protected renderWorkExperience(): TemplateResult {
     const { positions } = this._profile;
 
-    if (!(positions && positions.length)) {
+    if (!positions?.length) {
       return null;
     }
 
@@ -307,7 +313,7 @@ export class MgtProfile extends BasePersonCardSection {
                  ${position?.detail?.company?.displayName}
                </div>
                <div class="work-position__location" tabindex="0">
-                 ${position?.detail?.company?.address?.city}, ${position?.detail?.company?.address?.state}
+                 ${this.displayLocation(position?.detail?.company?.address)}
                </div>
              </div>
            </div>
@@ -338,7 +344,7 @@ export class MgtProfile extends BasePersonCardSection {
   protected renderEducation(): TemplateResult {
     const { educationalActivities } = this._profile;
 
-    if (!(educationalActivities && educationalActivities.length)) {
+    if (!educationalActivities?.length) {
       return null;
     }
 
@@ -352,11 +358,14 @@ export class MgtProfile extends BasePersonCardSection {
                ${this.getDisplayDateRange(educationalActivity)}
              </div>
            </div>
-           <div class="data-list__item__content">
-             <div class="educational-activity__degree" tabindex="0">
-               ${educationalActivity.program.displayName || 'Bachelors Degree'}
-             </div>
-           </div>
+           ${
+             educationalActivity.program.displayName
+               ? html`<div class="data-list__item__content">
+                  <div class="educational-activity__degree" tabindex="0">
+                  ${educationalActivity.program.displayName}
+                </div>`
+               : nothing
+           }
          </div>
        `);
     }
@@ -383,7 +392,7 @@ export class MgtProfile extends BasePersonCardSection {
    * @memberof MgtProfile
    */
   protected renderProfessionalInterests(): TemplateResult {
-    if (!this._professionalInterests || !this._professionalInterests.length) {
+    if (!this._professionalInterests?.length) {
       return null;
     }
 
@@ -418,7 +427,7 @@ export class MgtProfile extends BasePersonCardSection {
    * @memberof MgtProfile
    */
   protected renderPersonalInterests(): TemplateResult {
-    if (!this._personalInterests || !this._personalInterests.length) {
+    if (!this._personalInterests?.length) {
       return null;
     }
 
@@ -453,7 +462,7 @@ export class MgtProfile extends BasePersonCardSection {
    * @memberof MgtProfile
    */
   protected renderBirthday(): TemplateResult {
-    if (!this._birthdayAnniversary || !this._birthdayAnniversary.date) {
+    if (!this._birthdayAnniversary?.date) {
       return null;
     }
 
@@ -474,15 +483,15 @@ export class MgtProfile extends BasePersonCardSection {
      `;
   }
 
-  private isPersonalInterest = (interest: PersonInterest): boolean => {
-    return interest.categories && interest.categories.includes('personal');
+  private readonly isPersonalInterest = (interest: PersonInterest): boolean => {
+    return interest.categories?.includes('personal');
   };
 
-  private isProfessionalInterest = (interest: PersonInterest): boolean => {
-    return interest.categories && interest.categories.includes('professional');
+  private readonly isProfessionalInterest = (interest: PersonInterest): boolean => {
+    return interest.categories?.includes('professional');
   };
 
-  private isBirthdayAnniversary = (anniversary: PersonAnnualEvent): boolean => {
+  private readonly isBirthdayAnniversary = (anniversary: PersonAnnualEvent): boolean => {
     return anniversary.type === 'birthday';
   };
 
@@ -493,15 +502,30 @@ export class MgtProfile extends BasePersonCardSection {
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/tslint/config
-  private getDisplayDateRange(event: EducationalActivity): string {
+  private getDisplayDateRange(event: EducationalActivity): string | symbol {
+    // if startMonthYear is not defined, we do not show the date range (otherwise it will always start with 1970)
+    if (!event.startMonthYear) {
+      return nothing;
+    }
+
     const start = new Date(event.startMonthYear).getFullYear();
-    if (start === 0) {
-      return null;
+    // if the start year is 0 or 1 - it's probably an error or a strange "undefined"-value
+    if (start === 0 || start === 1) {
+      return nothing;
     }
 
     const end = event.endMonthYear ? new Date(event.endMonthYear).getFullYear() : this.strings.currentYearSubtitle;
     return `${start} — ${end}`;
+  }
+
+  private displayLocation(address: PhysicalAddress | undefined): string | symbol {
+    if (address?.city) {
+      if (address.state) {
+        return `${address.city}, ${address.state}`;
+      }
+      return address.city;
+    }
+    return nothing;
   }
 
   private initPostRenderOperations(): void {
@@ -520,13 +544,13 @@ export class MgtProfile extends BasePersonCardSection {
 
   private handleTokenOverflow(section: HTMLElement): void {
     const tokenLists = section.querySelectorAll('.token-list');
-    if (!tokenLists || !tokenLists.length) {
+    if (!tokenLists?.length) {
       return;
     }
 
     for (const tokenList of Array.from(tokenLists)) {
       const items = tokenList.querySelectorAll('.token-list__item');
-      if (!items || !items.length) {
+      if (!items?.length) {
         continue;
       }
 
@@ -558,7 +582,7 @@ export class MgtProfile extends BasePersonCardSection {
           overflowToken.remove();
           overflowItems.forEach(i => i.classList.remove('overflow'));
         };
-        overflowToken.addEventListener('click', (e: MouseEvent) => {
+        overflowToken.addEventListener('click', () => {
           revealOverflow();
         });
         overflowToken.addEventListener('keydown', (e: KeyboardEvent) => {

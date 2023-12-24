@@ -5,9 +5,9 @@
  * -------------------------------------------------------------------------------------------
  */
 
-import { fluentButton, fluentCheckbox, fluentDialog } from '@fluentui/web-components';
-import { arraysAreEqual, customElement, IGraph, MgtBaseComponent, mgtHtml } from '@microsoft/mgt-element';
-import { html, nothing, TemplateResult } from 'lit';
+import { fluentButton, fluentCheckbox, fluentDialog, fluentProgress } from '@fluentui/web-components';
+import { IGraph, MgtBaseComponent, mgtHtml } from '@microsoft/mgt-element';
+import { html, TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { DriveItem } from '@microsoft/microsoft-graph-types';
 import {
@@ -24,9 +24,8 @@ import { getSvg, SvgIcon } from '../../../utils/SvgHelper';
 import { formatBytes } from '../../../utils/Utils';
 import { styles } from './mgt-file-upload-css';
 import { strings } from './strings';
-import './mgt-file-upload-progress';
-
-registerFluentComponents(fluentButton, fluentCheckbox, fluentDialog);
+import { registerComponent } from '@microsoft/mgt-element';
+import { registerMgtFileComponent } from '../../mgt-file/mgt-file';
 
 /**
  * Simple union type for file system entry and directory entry types
@@ -62,13 +61,19 @@ const isFileSystemFileEntry = (entry: FileEntry): entry is FileSystemFileEntry =
   return entry.isFile;
 };
 
-// eslint-disable-next-line @typescript-eslint/tslint/config
 interface FutureDataTransferItem extends DataTransferItem {
   /**
    * Possible future implementation of webkitGetAsEntry
    */
   getAsEntry: typeof DataTransferItem.prototype.webkitGetAsEntry;
 }
+
+const isFutureDataTransferItem = (item: DataTransferItem): item is FutureDataTransferItem =>
+  'getAsEntry' in item && typeof item.getAsEntry === 'function';
+
+const isDataTransferItem = (item: DataTransferItem | File): item is DataTransferItem =>
+  ('getAsFile' in item && typeof item.getAsFile === 'function') ||
+  ('webkitGetAsEntry' in item && typeof item.webkitGetAsEntry === 'function');
 
 /**
  * Upload conflict behavior status
@@ -238,11 +243,16 @@ export interface MgtFileUploadConfig {
   dropTarget?: () => HTMLElement;
 }
 
-// eslint-disable-next-line @typescript-eslint/tslint/config
 interface FileWithPath extends File {
-  // eslint-disable-next-line @typescript-eslint/tslint/config
   fullPath: string;
 }
+
+export const registerMgtFileUploadComponent = () => {
+  registerFluentComponents(fluentProgress, fluentButton, fluentCheckbox, fluentDialog);
+
+  registerMgtFileComponent();
+  registerComponent('file-upload', MgtFileUpload);
+};
 
 /**
  * A component to upload files to OneDrive or SharePoint Sites
@@ -275,7 +285,6 @@ interface FileWithPath extends File {
  * @cssprop --file-upload-dialog-height - {String} the height of the file upload dialog box. Default value is auto.
  * @cssprop --file-upload-dialog-padding - {String} the padding of the file upload dialog box. Default value is 24px;
  */
-@customElement('file-upload')
 export class MgtFileUpload extends MgtBaseComponent {
   /**
    * Array of styles to apply to the element. The styles should be defined
@@ -353,9 +362,11 @@ export class MgtFileUpload extends MgtBaseComponent {
   // variable manage drag style when mouse over
   private _dragCounter = 0;
   // variable avoids removal of files after drag and drop, https://developer.mozilla.org/en-US/docs/Web/API/DataTransfer/dropEffect
-  private _dropEffect: DataTransfer['dropEffect'] = 'copy';
+  private get _dropEffect(): DataTransfer['dropEffect'] {
+    return 'copy';
+  }
   // variable defined max chuck size "4MB" for large files .
-  private _maxChunkSize: number = 4 * 1024 * 1024;
+  private readonly _maxChunkSize: number = 4 * 1024 * 1024;
   private _dialogTitle = '';
   private _dialogContent = '';
   private _dialogPrimaryButton = '';
@@ -429,34 +440,47 @@ export class MgtFileUpload extends MgtBaseComponent {
               <span class="upload-text">${this.strings.buttonUploadFile}</span>
           </fluent-button>
         </div>
-        ${
-          // slice used here to create new array on each render to ensure that file-upload-progress re-renders as the data changes
-          !this.hideInlineProgress
-            ? mgtHtml`
-              <mgt-file-upload-progress
-                .progressItems=${this.filesToUpload.slice()}
-                @clearnotification=${this.clearUploadNotification}
-              ></mgt-file-upload-progress>`
-            : nothing
-        }
+        <div class="file-upload-template">
+          ${this.renderFolderTemplate(this.filesToUpload)}
+        </div>
        `;
   }
 
-  private clearUploadNotification = (event: CustomEvent<MgtFileUploadItem>) => {
-    this.filesToUpload = this.filesToUpload.filter(item => item !== event.detail);
-  };
-
-  // TODO: remove these event listeners when component is disconnected
-  // TODO: only add eventlistners we don't have them already
-  public attachEventListeners() {
-    const root = this.fileUploadList.dropTarget?.() || this.parentElement;
-    if (root === this._dropTarget) return;
-    if (root) {
-      root.addEventListener('dragenter', this.handleonDragEnter);
-      root.addEventListener('dragleave', this.handleonDragLeave);
-      root.addEventListener('dragover', this.handleonDragOver);
-      root.addEventListener('drop', this.handleOnDrop);
-      this._dropTarget = root;
+  /**
+   * Render Folder structure of files to upload
+   *
+   * @param fileItems
+   * @returns
+   */
+  protected renderFolderTemplate(fileItems: MgtFileUploadItem[]) {
+    const folderStructure: string[] = [];
+    if (fileItems.length > 0) {
+      const templateFileItems = fileItems.map(fileItem => {
+        if (folderStructure.indexOf(fileItem.fullPath.substring(0, fileItem.fullPath.lastIndexOf('/'))) === -1) {
+          if (!fileItem.fullPath.endsWith('/')) {
+            folderStructure.push(fileItem.fullPath.substring(0, fileItem.fullPath.lastIndexOf('/')));
+            return mgtHtml`
+            <div class='file-upload-table'>
+              <div class='file-upload-cell'>
+                <mgt-file
+                  .fileDetails=${{
+                    name: fileItem.fullPath.substring(1, fileItem.fullPath.lastIndexOf('/')),
+                    folder: 'Folder'
+                  }}
+                  .view=${ViewType.oneline}
+                  class="mgt-file-item">
+                </mgt-file>
+              </div>
+            </div>
+            ${this.renderFileTemplate(fileItem, 'file-upload-folder-tab')}`;
+          } else {
+            return html`${this.renderFileTemplate(fileItem, '')}`;
+          }
+        } else {
+          return html`${this.renderFileTemplate(fileItem, 'file-upload-folder-tab')}`;
+        }
+      });
+      return html`${templateFileItems}`;
     }
   }
 
@@ -569,7 +593,7 @@ export class MgtFileUpload extends MgtBaseComponent {
     };
     const dragFileBorder: HTMLElement = this.renderRoot.querySelector('#file-upload-border');
     dragFileBorder.classList.remove('visible');
-    if (event.dataTransfer && event.dataTransfer.items) {
+    if (event.dataTransfer?.items) {
       void this.readUploadedFiles(event.dataTransfer.items, done);
     }
     this._dragCounter = 0;
@@ -725,7 +749,7 @@ export class MgtFileUpload extends MgtBaseComponent {
     const fileUploadDialog: HTMLElement = this.renderRoot.querySelector('#file-upload-dialog');
 
     switch (DialogStatus) {
-      case 'Upload':
+      case 'Upload': {
         const driveItem = await getGraphfile(this.fileUploadList.graph, `${this.getGrapQuery(fullPath)}?$select=id`);
         if (driveItem !== null) {
           if (this._applyAll === true) {
@@ -777,6 +801,7 @@ export class MgtFileUpload extends MgtBaseComponent {
           return null;
         }
         break;
+      }
       case 'ExcludedFileType':
         fileUploadDialog.classList.add('visible');
         this._dialogTitle = strings.fileTypeTitle;
@@ -823,7 +848,7 @@ export class MgtFileUpload extends MgtBaseComponent {
         this._dialogTitle = strings.maximumFileSizeTitle;
         this._dialogContent =
           strings.maximumFileSize
-            .replace('{FileSize}', formatBytes(fileUploadList.maxFileSize))
+            .replace('{FileSize}', formatBytes(fileUploadList.maxFileSize * 1024))
             .replace('{FileName}', file.name) +
           formatBytes(file.size) +
           '.';
@@ -875,10 +900,9 @@ export class MgtFileUpload extends MgtBaseComponent {
     let itemPath = '';
     if (this.fileUploadList.itemPath) {
       if (this.fileUploadList.itemPath.length > 0) {
-        itemPath =
-          this.fileUploadList.itemPath.substring(0, 1) === '/'
-            ? this.fileUploadList.itemPath
-            : '/' + this.fileUploadList.itemPath;
+        itemPath = this.fileUploadList.itemPath.startsWith('/')
+          ? this.fileUploadList.itemPath
+          : '/' + this.fileUploadList.itemPath;
       }
     }
 
@@ -1099,12 +1123,9 @@ export class MgtFileUpload extends MgtBaseComponent {
     const collectFilesItems: File[] = [];
 
     for (const uploadFileItem of filesItems) {
-      if (isDataTransferItem(uploadFileItem) && uploadFileItem.kind === 'file') {
-        // Defensive code to validate if function exists in Browser
-        // Collect all Folders into Array
-        const futureUpload = uploadFileItem as FutureDataTransferItem;
-        if (futureUpload.getAsEntry) {
-          entry = futureUpload.getAsEntry();
+      if (isDataTransferItem(uploadFileItem)) {
+        if (isFutureDataTransferItem(uploadFileItem)) {
+          entry = uploadFileItem.getAsEntry();
           if (isFileSystemDirectoryEntry(entry)) {
             folders.push(entry);
           } else {
@@ -1125,22 +1146,19 @@ export class MgtFileUpload extends MgtBaseComponent {
               collectFilesItems.push(file);
             }
           }
-        } else if ('function' === typeof uploadFileItem.getAsFile) {
+        } else {
           const file = uploadFileItem.getAsFile();
           if (file) {
             this.writeFilePath(file, '');
             collectFilesItems.push(file);
           }
         }
-        continue;
       } else {
-        const fileItem = isDataTransferItem(uploadFileItem) ? uploadFileItem.getAsFile() : uploadFileItem;
-        if (fileItem) {
-          this.writeFilePath(fileItem, '');
-          collectFilesItems.push(fileItem);
-        }
+        this.writeFilePath(uploadFileItem, '');
+        collectFilesItems.push(uploadFileItem);
       }
     }
+
     // Collect Files from folder
     if (folders.length > 0) {
       const folderFiles = await this.getFolderFiles(folders);
@@ -1199,6 +1217,6 @@ export class MgtFileUpload extends MgtBaseComponent {
     });
   }
   private writeFilePath(file: File | FileSystemEntry, path: string) {
-    ((file as unknown) as FileEntry).fullPath = path;
+    (file as unknown as FileEntry).fullPath = path;
   }
 }

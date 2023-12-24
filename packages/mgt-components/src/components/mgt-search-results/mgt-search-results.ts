@@ -15,7 +15,6 @@ import {
   prepScopes,
   Providers,
   ProviderState,
-  customElement,
   mgtHtml,
   BetaGraph,
   BatchResponse,
@@ -52,8 +51,9 @@ import { getSvg, SvgIcon } from '../../utils/SvgHelper';
 import { fluentSkeleton, fluentButton, fluentTooltip, fluentDivider } from '@fluentui/web-components';
 import { registerFluentComponents } from '../../utils/FluentComponents';
 import { CacheResponse } from '../CacheResponse';
-
-registerFluentComponents(fluentSkeleton, fluentButton, fluentTooltip, fluentDivider);
+import { registerComponent } from '@microsoft/mgt-element';
+import { registerMgtFileComponent } from '../mgt-file/mgt-file';
+import { registerMgtPersonComponent } from '../mgt-person/mgt-person';
 
 /**
  * Object representing a thumbnail
@@ -83,28 +83,28 @@ interface BinaryThumbnail {
 /**
  * Object representing a Search Answer
  */
-type Answer = {
+interface Answer {
   '@odata.type': string;
   displayName?: string;
   description?: string;
   webUrl?: string;
-};
+}
 
 /**
  * Object representing a search resource supporting thumbnails
  */
-type ThumbnailResource = {
+interface ThumbnailResource {
   thumbnail: Thumbnail;
-};
+}
 
-type UserResource = {
+interface UserResource {
   lastModifiedBy?: {
     user?: {
       email?: string;
     };
   };
   userPrincipalName?: string;
-};
+}
 
 /**
  * Object representing a Search Resource
@@ -118,8 +118,17 @@ type SearchResource = Partial<
  */
 type SearchResponseCollection = CollectionResponse<SearchResponse>;
 
+export const registerMgtSearchResultsComponent = () => {
+  registerFluentComponents(fluentSkeleton, fluentButton, fluentTooltip, fluentDivider);
+
+  registerMgtFileComponent();
+  registerMgtPersonComponent();
+  registerComponent('search-results', MgtSearchResults);
+};
+
 /**
- * Custom element for making Microsoft Graph get queries
+ * **Preview component** Custom element for making Microsoft Graph get queries.
+ * Component may change before general availability release.
  *
  * @fires {CustomEvent<DataChangedDetail>} dataChange - Fired when data changes
  *
@@ -131,7 +140,6 @@ type SearchResponseCollection = CollectionResponse<SearchResponse>;
  * @class mgt-search-results
  * @extends {MgtTemplatedComponent}
  */
-@customElement('search-results')
 export class MgtSearchResults extends MgtTemplatedComponent {
   /**
    * Default page size is 10
@@ -212,10 +220,9 @@ export class MgtSearchResults extends MgtTemplatedComponent {
    */
   @property({
     attribute: 'scopes',
-    converter: (value, type) => {
+    converter: (value, _type) => {
       return value ? value.toLowerCase().split(',') : null;
-    },
-    reflect: true
+    }
   })
   public scopes: string[] = [];
 
@@ -227,10 +234,9 @@ export class MgtSearchResults extends MgtTemplatedComponent {
    */
   @property({
     attribute: 'content-sources',
-    converter: (value, type) => {
+    converter: (value, _type) => {
       return value ? value.toLowerCase().split(',') : null;
-    },
-    reflect: true
+    }
   })
   public contentSources: string[] = [];
 
@@ -373,8 +379,12 @@ export class MgtSearchResults extends MgtTemplatedComponent {
   @state() private response: SearchResponseCollection;
 
   private isRefreshing = false;
-  private readonly searchEndpoint: string = '/search/query';
-  private readonly maxPageSize: number = 1000;
+  private get searchEndpoint() {
+    return '/search/query';
+  }
+  private get maxPageSize() {
+    return 1000;
+  }
   private readonly defaultFields: string[] = [
     'webUrl',
     'lastModifiedBy',
@@ -393,6 +403,10 @@ export class MgtSearchResults extends MgtTemplatedComponent {
       this._currentPage = value;
       void this.requestStateUpdate(true);
     }
+  }
+
+  constructor() {
+    super();
   }
 
   /**
@@ -454,12 +468,12 @@ export class MgtSearchResults extends MgtTemplatedComponent {
       renderedTemplate = this.renderLoading();
     } else if (this.error) {
       renderedTemplate = this.renderError();
-    } else if (this.response && this.response?.value[0]?.hitsContainers[0]) {
+    } else if (this.response && this.hasTemplate('default')) {
+      renderedTemplate = this.renderTemplate('default', this.response) || html``;
+    } else if (this.response?.value[0]?.hitsContainers[0]) {
       renderedTemplate = html`${this.response?.value[0]?.hitsContainers[0]?.hits?.map(result =>
         this.renderResult(result)
       )}`;
-    } else if (this.response) {
-      renderedTemplate = this.renderTemplate('default', this.response) || html``;
     } else if (this.hasTemplate('no-data')) {
       renderedTemplate = this.renderTemplate('no-data', null);
     } else {
@@ -513,7 +527,7 @@ export class MgtSearchResults extends MgtTemplatedComponent {
           const graph = provider.graph.forComponent(this);
           let request = graph.api(this.searchEndpoint).version(this.version);
 
-          if (this.scopes && this.scopes.length) {
+          if (this.scopes?.length) {
             request = request.middlewareOptions(prepScopes(...this.scopes));
           }
 
@@ -523,8 +537,11 @@ export class MgtSearchResults extends MgtTemplatedComponent {
             const thumbnailBatch = graph.createBatch<BinaryThumbnail>();
             const thumbnailBatchBeta = BetaGraph.fromGraph(graph).createBatch<BinaryThumbnail>();
 
-            for (let i = 0; i < response.value[0].hitsContainers[0].hits.length; i++) {
-              const element = response.value[0].hitsContainers[0].hits[i];
+            const hits =
+              response.value?.length && response.value[0].hitsContainers?.length
+                ? response.value[0].hitsContainers[0]?.hits ?? []
+                : [];
+            for (const element of hits) {
               const resource = element.resource as SearchResource;
               if (
                 (resource.size > 0 || resource.webUrl?.endsWith('.aspx')) &&
@@ -533,12 +550,12 @@ export class MgtSearchResults extends MgtTemplatedComponent {
               ) {
                 if (resource['@odata.type'] === '#microsoft.graph.listItem') {
                   thumbnailBatchBeta.get(
-                    i.toString(),
+                    element.hitId.toString(),
                     `/sites/${resource.parentReference.siteId}/pages/${resource.id}`
                   );
                 } else {
                   thumbnailBatch.get(
-                    i.toString(),
+                    element.hitId.toString(),
                     `/drives/${resource.parentReference.driveId}/items/${resource.id}/thumbnails/0/medium`
                   );
                 }
@@ -854,7 +871,7 @@ export class MgtSearchResults extends MgtTemplatedComponent {
    * Triggers a first page click
    *
    */
-  private onFirstPageClick = () => {
+  private readonly onFirstPageClick = () => {
     this.currentPage = 1;
     this.scrollToFirstResult();
   };
@@ -862,7 +879,7 @@ export class MgtSearchResults extends MgtTemplatedComponent {
   /**
    * Triggers a previous page click
    */
-  private onPageBackClick = () => {
+  private readonly onPageBackClick = () => {
     this.currentPage--;
     this.scrollToFirstResult();
   };
@@ -870,7 +887,7 @@ export class MgtSearchResults extends MgtTemplatedComponent {
   /**
    * Triggers a next page click
    */
-  private onPageNextClick = () => {
+  private readonly onPageNextClick = () => {
     this.currentPage++;
     this.scrollToFirstResult();
   };
@@ -1047,8 +1064,8 @@ export class MgtSearchResults extends MgtTemplatedComponent {
           html`
           <div class="search-result-thumbnail">
             <a href="${resource.webUrl}" target="_blank"><img alt="${trimFileExtension(
-            resource.name || getNameFromUrl(resource.webUrl)
-          )}" src="${resource.thumbnail?.url || nothing}" /></a>
+              resource.name || getNameFromUrl(resource.webUrl)
+            )}" src="${resource.thumbnail?.url || nothing}" /></a>
           </div>`
         }
       </div>
@@ -1246,7 +1263,7 @@ export class MgtSearchResults extends MgtTemplatedComponent {
     }
 
     if (this.version === 'beta') {
-      requestOptions.query.queryString = this.queryTemplate ? this.queryTemplate : undefined;
+      (requestOptions as BetaSearchRequest).query.queryTemplate = this.queryTemplate ? this.queryTemplate : undefined;
     }
 
     return requestOptions;

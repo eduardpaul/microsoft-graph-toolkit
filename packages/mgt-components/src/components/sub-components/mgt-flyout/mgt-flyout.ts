@@ -10,7 +10,10 @@ import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { getSegmentAwareWindow, isWindowSegmentAware, IWindowSegment } from '../../../utils/WindowSegmentHelpers';
 import { styles } from './mgt-flyout-css';
-import { MgtBaseComponent, customElement } from '@microsoft/mgt-element/';
+import { MgtBaseComponent } from '@microsoft/mgt-element/';
+import { registerComponent } from '@microsoft/mgt-element';
+
+export const registerMgtFlyoutComponent = () => registerComponent('flyout', MgtFlyout);
 
 /**
  * A component to create flyout anchored to an element
@@ -19,8 +22,6 @@ import { MgtBaseComponent, customElement } from '@microsoft/mgt-element/';
  * @class MgtFlyout
  * @extends {LitElement}
  */
-@customElement('flyout')
-// @customElement('mgt-flyout')
 export class MgtFlyout extends MgtBaseComponent {
   /**
    * Array of styles to apply to the element. The styles should be defined
@@ -96,7 +97,9 @@ export class MgtFlyout extends MgtBaseComponent {
   }
 
   // Minimum distance to render from window edge
-  private _edgePadding = 24;
+  private get _edgePadding() {
+    return 24;
+  }
 
   // if the flyout is opened once, this will keep the flyout in the dom
   private _renderedOnce = false;
@@ -244,7 +247,17 @@ export class MgtFlyout extends MgtBaseComponent {
     `;
   }
 
-  private updateFlyout() {
+  /**
+   * Updates the position of the flyout.
+   * Makes a second recursive call to ensure the flyout is positioned correctly.
+   * This is needed as the width of the flyout is not settled until afer the first render.
+   *
+   * @private
+   * @param {boolean} [firstPass=true]
+   * @return {*}
+   * @memberof MgtFlyout
+   */
+  private updateFlyout(firstPass = true) {
     if (!this.isOpen) {
       return;
     }
@@ -407,12 +420,17 @@ export class MgtFlyout extends MgtBaseComponent {
         window.requestAnimationFrame(() => this.updateFlyout());
       }
 
-      if (height) {
+      // don't use the calculated height on the first pass as the contents of the flyout may not have rendered yet
+      // this gives them a change to contribute height and not get forced to a smaller than intended height
+      if (height && !firstPass) {
         flyout.style.maxHeight = `${height}px`;
         flyout.style.setProperty('--mgt-flyout-set-height', `${height}px`);
       } else {
         flyout.style.maxHeight = null;
         flyout.style.setProperty('--mgt-flyout-set-height', 'unset');
+      }
+      if (firstPass) {
+        window.requestAnimationFrame(() => this.updateFlyout(false));
       }
     }
   }
@@ -431,7 +449,7 @@ export class MgtFlyout extends MgtBaseComponent {
     }
   }
 
-  private handleWindowEvent = (e: Event) => {
+  private readonly handleWindowEvent = (e: Event) => {
     const flyout = this._flyout;
 
     if (flyout) {
@@ -455,17 +473,17 @@ export class MgtFlyout extends MgtBaseComponent {
     this.close();
   };
 
-  private handleResize = (e: Event) => {
+  private readonly handleResize = () => {
     this.close();
   };
 
-  private handleKeyUp = (e: KeyboardEvent) => {
+  private readonly handleKeyUp = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       this.close();
     }
   };
 
-  private handleFlyoutWheel = (e: Event) => {
+  private readonly handleFlyoutWheel = (e: Event) => {
     e.preventDefault();
   };
 }

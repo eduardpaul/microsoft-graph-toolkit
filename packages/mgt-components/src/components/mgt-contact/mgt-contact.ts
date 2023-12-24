@@ -7,7 +7,7 @@
 
 import { User } from '@microsoft/microsoft-graph-types';
 import { html, TemplateResult } from 'lit';
-import { TeamsHelper, customElement } from '@microsoft/mgt-element';
+import { TeamsHelper } from '@microsoft/mgt-element';
 import { classMap } from 'lit/directives/class-map.js';
 
 import { getEmailFromGraphEntity } from '../../graph/graph.people';
@@ -15,6 +15,7 @@ import { BasePersonCardSection } from '../BasePersonCardSection';
 import { styles } from './mgt-contact-css';
 import { getSvg, SvgIcon } from '../../utils/SvgHelper';
 import { strings } from './strings';
+import { registerComponent } from '@microsoft/mgt-element';
 
 /**
  * Represents a contact part and its metadata
@@ -22,19 +23,18 @@ import { strings } from './strings';
  * @interface IContactPart
  */
 interface IContactPart {
-  // eslint-disable-next-line @typescript-eslint/tslint/config
   icon: TemplateResult;
-  // eslint-disable-next-line @typescript-eslint/tslint/config
   title: string;
-  // eslint-disable-next-line @typescript-eslint/tslint/config
   value?: string;
-  // eslint-disable-next-line @typescript-eslint/tslint/config
   onClick?: (e: Event) => void;
-  // eslint-disable-next-line @typescript-eslint/tslint/config
   showCompact: boolean;
 }
 
 type Protocol = 'mailto:' | 'tel:';
+
+export const registerMgtContactComponent = () => {
+  registerComponent('contact', MgtContact);
+};
 
 /**
  * The contact details subsection of the person card
@@ -43,8 +43,6 @@ type Protocol = 'mailto:' | 'tel:';
  * @class MgtContact
  * @extends {MgtTemplatedComponent}
  */
-@customElement('contact')
-// @customElement('mgt-contact')
 export class MgtContact extends BasePersonCardSection {
   /**
    * Array of styles to apply to the element. The styles should be defined
@@ -76,9 +74,9 @@ export class MgtContact extends BasePersonCardSection {
     return !!availableParts.length;
   }
 
-  private _person?: User;
+  private readonly _person?: User;
 
-  private _contactParts: Record<string, IContactPart> = {
+  private readonly _contactParts: Record<string, IContactPart> = {
     email: {
       icon: getSvg(SvgIcon.Email),
       onClick: () => this.sendEmail(getEmailFromGraphEntity(this._person)),
@@ -111,7 +109,7 @@ export class MgtContact extends BasePersonCardSection {
     title: {
       icon: getSvg(SvgIcon.Person),
       showCompact: false,
-      title: this.strings.titleTitle
+      title: this.strings.personTitle
     },
     officeLocation: {
       icon: getSvg(SvgIcon.OfficeLocation),
@@ -131,7 +129,7 @@ export class MgtContact extends BasePersonCardSection {
     this._contactParts.title.value = this._person.jobTitle;
     this._contactParts.officeLocation.value = this._person.officeLocation;
 
-    if (this._person.businessPhones && this._person.businessPhones.length) {
+    if (this._person.businessPhones?.length) {
       this._contactParts.businessPhone.value = this._person.businessPhones[0];
     }
   }
@@ -201,7 +199,7 @@ export class MgtContact extends BasePersonCardSection {
       (p: IContactPart) => !!p.value && p.showCompact
     );
 
-    if (!compactParts || !compactParts.length) {
+    if (!compactParts?.length) {
       compactParts = Object.values(availableParts).slice(0, 2);
     }
 
@@ -304,7 +302,7 @@ export class MgtContact extends BasePersonCardSection {
       window.open(`${protocol}${resource}`, '_blank', 'noreferrer');
     } else {
       // eslint-disable-next-line no-console
-      console.error(`Target resource for ${protocol} link was not provided: resource: ${resource}`);
+      console.error(`🦒: Target resource for ${protocol} link was not provided: resource: ${resource}`);
     }
   }
 
@@ -317,7 +315,7 @@ export class MgtContact extends BasePersonCardSection {
   protected sendChat(upn: string): void {
     if (!upn) {
       // eslint-disable-next-line no-console
-      console.error("Can't send chat when upn is not provided");
+      console.error("🦒: Can't send chat when upn is not provided");
       return;
     }
 

@@ -14,7 +14,14 @@ import { MgtPersonCardState, UserWithManager } from '../mgt-person-card/mgt-pers
 import { styles } from './mgt-organization-css';
 import { strings } from './strings';
 import { ViewType } from '../../graph/types';
-import { mgtHtml, customElement } from '@microsoft/mgt-element';
+import { mgtHtml } from '@microsoft/mgt-element';
+import { registerComponent } from '@microsoft/mgt-element';
+import { registerMgtPersonComponent } from '../mgt-person/mgt-person';
+
+export const registerMgtOrganizationComponent = () => {
+  registerMgtPersonComponent();
+  registerComponent('organization', MgtOrganization);
+};
 
 /**
  * The member organization subsection of the person card
@@ -23,8 +30,6 @@ import { mgtHtml, customElement } from '@microsoft/mgt-element';
  * @class MgtOrganization
  * @extends {MgtTemplatedComponent}
  */
-@customElement('organization')
-// @customElement('mgt-organization')
 export class MgtOrganization extends BasePersonCardSection {
   /**
    * Array of styles to apply to the element. The styles should be defined
@@ -76,7 +81,7 @@ export class MgtOrganization extends BasePersonCardSection {
   public get displayName(): string {
     const { person, directReports } = this._state;
 
-    if (!person.manager && directReports && directReports.length) {
+    if (!person.manager && directReports?.length) {
       return `${this.strings.directReportsSectionTitle} (${directReports.length})`;
     }
 
@@ -113,7 +118,7 @@ export class MgtOrganization extends BasePersonCardSection {
   protected renderCompactView(): TemplateResult {
     let contentTemplate: TemplateResult;
 
-    if (!this._state || !this._state.person) {
+    if (!this._state?.person) {
       return null;
     }
 
@@ -123,7 +128,7 @@ export class MgtOrganization extends BasePersonCardSection {
       return null;
     } else if (person.manager) {
       contentTemplate = this.renderCoworker(person.manager);
-    } else if (directReports && directReports.length) {
+    } else if (directReports?.length) {
       contentTemplate = this.renderCompactDirectReports();
     }
 
@@ -144,7 +149,7 @@ export class MgtOrganization extends BasePersonCardSection {
   protected renderFullView(): TemplateResult {
     let contentTemplate: TemplateResult;
 
-    if (!this._state || !this._state.person) {
+    if (!this._state?.person) {
       return null;
     }
 
@@ -189,6 +194,7 @@ export class MgtOrganization extends BasePersonCardSection {
       >
         <div class="org-member__person">
           <mgt-person
+            class="org-member__person-image"
             .personDetails=${person}
             .fetchImage=${true}
             .view=${ViewType.twolines}
@@ -212,7 +218,7 @@ export class MgtOrganization extends BasePersonCardSection {
    */
   protected renderManagers(): TemplateResult[] {
     const { person } = this._state;
-    if (!person || !person.manager) {
+    if (!person?.manager) {
       return null;
     }
 
@@ -240,7 +246,7 @@ export class MgtOrganization extends BasePersonCardSection {
    */
   protected renderDirectReports(): TemplateResult {
     const { directReports } = this._state;
-    if (!directReports || !directReports.length) {
+    if (!directReports?.length) {
       return null;
     }
 
@@ -258,6 +264,7 @@ export class MgtOrganization extends BasePersonCardSection {
             >
               <div class="org-member__person">
                 <mgt-person
+                  class="org-member__person-image"
                   .personDetails=${person}
                   .fetchImage=${true}
                   .showPresence=${true}
@@ -298,6 +305,7 @@ export class MgtOrganization extends BasePersonCardSection {
               @click=${() => this.navigateCard(person)}
             >
               <mgt-person
+                class="direct-report__person-image"
                 .personDetails=${person}
                 .fetchImage=${true}
                 .showPresence=${true}
@@ -323,6 +331,7 @@ export class MgtOrganization extends BasePersonCardSection {
        <div class="org-member org-member--target">
          <div class="org-member__person">
            <mgt-person
+              class="org-member__person-image"
              .personDetails=${person}
              .fetchImage=${true}
              .showPresence=${true}
@@ -352,6 +361,7 @@ export class MgtOrganization extends BasePersonCardSection {
       >
         <div class="coworker__person">
           <mgt-person
+            class="coworker__person-image"
             .personDetails=${person}
             .fetchImage=${true}
             .showPresence=${true}
@@ -372,7 +382,7 @@ export class MgtOrganization extends BasePersonCardSection {
    */
   protected renderCoworkers(): TemplateResult {
     const { people } = this._state;
-    if (!people || !people.length) {
+    if (!people?.length) {
       return null;
     }
 
